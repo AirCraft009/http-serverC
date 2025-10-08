@@ -11,7 +11,7 @@ typedef struct{
 }server;
 void Listen(server * server);
 void Accept(server * server);
-void handleConnection(conn connection);
+void * handleConnection(void * connection);
 
 
 void Listen(server * server) {
@@ -26,22 +26,29 @@ void Accept(server *server) {
         Listen(server);
     }
     while (server->listening) {
-        conn connection = AcceptConn(server->sock);
-        if (connection.clientSock == INVALID_SOCKET) {
+        conn * connection = AcceptConn(server->sock);
+        if (!connection) {
+            free(connection);
             continue;
         }
-        handleConnection(connection);
 
+        pthread_t handleThread;
+        pthread_create(&handleThread, NULL, handleConnection, connection);
     }
 }
 
-void handleConnection(conn connection) {
+void * handleConnection(void * void_conn) {
+    conn * connection = void_conn;
+
     char clientIP[INET_ADDRSTRLEN];
-    inet_ntop(AF_INET, &connection.clientAddr.sin_addr, clientIP, sizeof(clientIP));
-    printf("Client connected from %s:%d\n", clientIP, ntohs(connection.clientAddr.sin_port));
+    inet_ntop(AF_INET, &connection->clientAddr.sin_addr, clientIP, sizeof(clientIP));
+    printf("Client connected from %s:%d\n", clientIP, ntohs(connection->clientAddr.sin_port));
 
     const char *msg = "Hello from server!\n";
-    send(connection.clientSock, msg, (int)strlen(msg), 0);
+    send(connection->clientSock, msg, (int)strlen(msg), 0);
+
+    free(connection);
+    return NULL;
 }
 
 void DestroyServer(server * server) {

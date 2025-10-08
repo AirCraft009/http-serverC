@@ -24,7 +24,7 @@ void CloseSocket(Csocket * csocket);
 Csocket * CreateSocket(int port);
 int InitSocket(Csocket * csocket);
 int ListenToOne(Csocket * csocket);
-conn AcceptConn(Csocket * csocket);
+conn * AcceptConn(Csocket * csocket);
 void CsocketFree(Csocket * csocket);
 
 
@@ -99,19 +99,19 @@ void CsocketFree(Csocket* csocket) {
     free(csocket);
 }
 
-conn AcceptConn(Csocket* csocket) {
-    // Accept incoming connection
-    conn conn = {0};
-    conn.clientAddrSize = sizeof(conn.clientAddr);
+conn * AcceptConn(Csocket* csocket) {
+    conn * conn = malloc(sizeof(conn));
+    if (!conn) return NULL;
+    conn->clientAddrSize = sizeof(conn->clientAddr);
 
-    SOCKET clientSock = accept(csocket->serverSock, (struct sockaddr*)&conn.clientAddr, &conn.clientAddrSize);
+    SOCKET clientSock = accept(csocket->serverSock, (struct sockaddr*)&conn->clientAddr, &conn->clientAddrSize);
     if (clientSock == INVALID_SOCKET) {
         printf("accept failed: %d\n", WSAGetLastError());
         closesocket(clientSock);
         WSACleanup();
-        return conn;
+        return NULL;
     }
-    conn.clientSock = clientSock;
+    conn->clientSock = clientSock;
     return conn;
 }
 
