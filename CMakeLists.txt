@@ -9,4 +9,6 @@ add_library(https_serverC STATIC
         server/router.c
         parser/parser.c
         parser/parser.h
+        server/server.c
+        server/socket.c
 )
