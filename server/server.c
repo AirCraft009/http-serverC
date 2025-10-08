@@ -32,7 +32,7 @@ void Accept(server *server) {
     while (server->listening) {
         SOCKET connSocket = AcceptConn(&server->sock);
         if (connSocket == (SOCKET) 0 ) {
-            return;
+            continue;
         }
         handleConnection(connSocket);
 

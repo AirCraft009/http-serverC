@@ -8,17 +8,23 @@
 
 typedef struct{
     WSADATA wsaData;
-    SOCKET serverSock, clientSock;
-    struct sockaddr_in addr, clientAddr;
-    int clientAddrSize;
+    SOCKET serverSock;
+    // clientAddr is just here to get the size
+    struct sockaddr_in addr;
     int Port;
 } Csocket;
+
+typedef struct {
+    SOCKET clientSock;
+    struct sockaddr_in clientAddr;
+    int clientAddrSize;
+}conn;
 
 void CloseSocket(Csocket * csocket);
 Csocket * CreateSocket(int port);
 int InitSocket(Csocket * csocket);
 int ListenToOne(Csocket * csocket);
-SOCKET AcceptConn(Csocket * csocket);
+conn AcceptConn(Csocket * csocket);
 void CsocketFree(Csocket * csocket);
 
 
@@ -38,7 +44,6 @@ Csocket *CreateSocket(int port) {
 }
 
 int InitSocket(Csocket* csocket) {
-    csocket->clientAddrSize = sizeof(csocket->clientAddr);
 
     // initialize winsock (WSAStartup inject DLL
     if (WSAStartup(MAKEWORD(2, 2), &csocket->wsaData) != 0) {
@@ -92,20 +97,22 @@ void CsocketFree(Csocket* csocket) {
     CloseSocket(csocket);
 }
 
-SOCKET AcceptConn(Csocket* csocket) {
+conn AcceptConn(Csocket* csocket) {
     // Accept incoming connection
-    SOCKET clientSock = accept(csocket->serverSock, (struct sockaddr*)&csocket->clientAddr, &csocket->clientAddrSize);
+    conn conn = {0};
+    conn.clientAddrSize = sizeof(conn.clientAddr);
+
+    SOCKET clientSock = accept(csocket->serverSock, (struct sockaddr*)&conn.clientAddr, &conn.clientAddrSize);
     if (clientSock == INVALID_SOCKET) {
         printf("accept failed: %d\n", WSAGetLastError());
-        closesocket(csocket->clientSock);
+        closesocket(clientSock);
         WSACleanup();
-        return 0;
+        return conn;
     }
-    return clientSock;
+    return conn;
 }
 
 void CloseSocket(Csocket* csocket) {
     closesocket(csocket->serverSock);
-    closesocket(csocket->clientSock);
     WSACleanup();
 }
