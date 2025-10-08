@@ -33,11 +33,6 @@ Csocket *CreateSocket(int port) {
     Csocket *cs = malloc(sizeof(Csocket));
 
     if (!cs) return NULL;
-    cs->serverSock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-    if (cs->serverSock == INVALID_SOCKET) {
-        free(cs);
-        return NULL;
-    }
     // I don't know if this is the correct choice to only set port and then have everything else be done in InitSocket!!
     cs-> Port = port;
     return cs;
@@ -49,6 +44,12 @@ int InitSocket(Csocket* csocket) {
     if (WSAStartup(MAKEWORD(2, 2), &csocket->wsaData) != 0) {
         printf("WSAStartup failed\n");
         WSACleanup();
+        return 1;
+    }
+
+    csocket->serverSock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    if (csocket->serverSock == INVALID_SOCKET) {
+        free(csocket);
         return 1;
     }
 
@@ -95,6 +96,7 @@ int ListenToOne(Csocket* csocket) {
 void CsocketFree(Csocket* csocket) {
     if (!csocket) return;
     CloseSocket(csocket);
+    free(csocket);
 }
 
 conn AcceptConn(Csocket* csocket) {
@@ -109,6 +111,7 @@ conn AcceptConn(Csocket* csocket) {
         WSACleanup();
         return conn;
     }
+    conn.clientSock = clientSock;
     return conn;
 }
 
