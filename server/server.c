@@ -34,6 +34,7 @@ void Accept(server *server) {
 
         pthread_t handleThread;
         pthread_create(&handleThread, NULL, handleConnection, connection);
+        pthread_detach(handleThread);
     }
 }
 
