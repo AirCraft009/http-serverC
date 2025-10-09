@@ -35,23 +35,21 @@ void Accept(server *server) {
             continue;
         }
 
+        // read socket/AcceptConn about the problems with the thread I had
         HANDLE hThread = (HANDLE) _beginthreadex(NULL, 0, handleConnection, connection, 0, &threadID);
         if (hThread == nullptr) {
             printf("Error creating thread\n");
         }
-        printf("Thread ID: %d\n", threadID);
         CloseHandle( hThread );
     }
 }
 
 
 unsigned __stdcall handleConnection(void * void_conn) {
-    printf("Connection established\n");
     conn * connection = (void *) void_conn;
 
     char clientIP[INET_ADDRSTRLEN];
     inet_ntop(AF_INET, &connection->clientAddr.sin_addr, clientIP, sizeof(clientIP));
-    printf("Client connected from %s:%d\n", clientIP, ntohs(connection->clientAddr.sin_port));
     const char *msg = "Hello from server!\n";
     send(connection->clientSock, msg, (int)strlen(msg), 0);
     free(connection);

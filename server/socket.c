@@ -92,18 +92,29 @@ void CsocketFree(Csocket* csocket) {
 }
 
 conn * AcceptConn(Csocket* csocket) {
-    conn * conn = malloc(sizeof(conn));
-    if (!conn) return NULL;
-    conn->clientAddrSize = sizeof(conn->clientAddr);
+    /**
+    !!important
+    this was the old script I was allocating 4-8 bytes and not the struct ammount of bytes
+    so I was then passing this malformed struct to the thread and it just kept crashing
+    I was going insane about it but I fixed it just by renaming connection
 
-    SOCKET clientSock = accept(csocket->serverSock, (struct sockaddr*)&conn->clientAddr, &conn->clientAddrSize);
+    TODO: Remember and not make this mistake again !!!!
+    conn * conn = malloc(sizeof(conn));
+    return conn;
+    */
+
+    conn * connection = malloc(sizeof(* connection));
+    if (!connection) return NULL;
+    connection->clientAddrSize = sizeof(connection->clientAddr);
+
+    SOCKET clientSock = accept(csocket->serverSock, (struct sockaddr*)&connection->clientAddr, &connection->clientAddrSize);
     if (clientSock == INVALID_SOCKET) {
         printf("accept failed: %d\n", WSAGetLastError());
-        free(conn);
+        free(connection);
         return NULL;
     }
-    conn->clientSock = clientSock;
-    return conn;
+    connection->clientSock = clientSock;
+    return connection;
 }
 
 void CloseSocket(Csocket* csocket) {
