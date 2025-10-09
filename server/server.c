@@ -11,13 +11,14 @@ typedef struct{
 }server;
 void Listen(server * server);
 void Accept(server * server);
-unsigned int handleConnection(void * connection);
+unsigned __stdcall handleConnection(void * void_conn);
 
 
 void Listen(server * server) {
     assert(server);
     server->listening = true;
     ListenToOne(server->sock);
+    printf("Listening on: %d\n", server->sock->Port);
 }
 
 void Accept(server *server) {
@@ -25,26 +26,26 @@ void Accept(server *server) {
     if (!server->listening) {
         Listen(server);
     }
+
+    unsigned threadID;
+
     while (server->listening) {
         conn * connection = AcceptConn(server->sock);
         if (!connection) {
             continue;
         }
 
-        uintptr_t handleThread = _beginthreadex(
-            NULL,       // security
-            0,          // stack size
-            handleConnection,
-            connection,
-            0,          // creation flags
-            NULL        // thread id
-        );
-
+        HANDLE hThread = (HANDLE) _beginthreadex(NULL, 0, handleConnection, connection, 0, &threadID);
+        if (hThread == nullptr) {
+            printf("Error creating thread\n");
+        }
+        printf("Thread ID: %d\n", threadID);
+        CloseHandle( hThread );
     }
 }
 
 
-unsigned int handleConnection(void * void_conn) {
+unsigned __stdcall handleConnection(void * void_conn) {
     printf("Connection established\n");
     conn * connection = (void *) void_conn;
 
@@ -83,6 +84,7 @@ int main() {
     server* server = InitServer(8080);
     Listen(server);
     Accept(server);
+    printf("ending");
     FreeServer(server);
     return 0;
 }
