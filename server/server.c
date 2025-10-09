@@ -46,12 +46,29 @@ void Accept(server *server) {
 
 
 unsigned __stdcall handleConnection(void * void_conn) {
+    char buffer[BUFFSIZE];
+    int bytes;
     conn * connection = (void *) void_conn;
-
     char clientIP[INET_ADDRSTRLEN];
     inet_ntop(AF_INET, &connection->clientAddr.sin_addr, clientIP, sizeof(clientIP));
-    const char *msg = "Hello from server!\n";
-    send(connection->clientSock, msg, (int)strlen(msg), 0);
+
+    while (1) {
+        memset(&buffer, 0, BUFFSIZE);
+        bytes = recv(connection->clientSock, buffer, BUFFSIZE, 0);
+        if (bytes > 0){
+            buffer[bytes] = '\0';
+            printf("Client says: %s\n", buffer);
+            send(connection->clientSock, buffer, bytes, 0);
+        }else if (bytes == 0){
+            //keeping only for now
+            printf("Connection closed\n");
+            break;
+        }else{
+            printf("Error receiving data\n");
+            break;
+        }
+    }
+
     free(connection);
     return 0;
 }
