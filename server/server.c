@@ -2,7 +2,7 @@
 #include "server.h"
 
 #include <assert.h>
-#include <pthread.h>
+#include <process.h>
 #include <stdio.h>
 
 typedef struct{
@@ -11,7 +11,7 @@ typedef struct{
 }server;
 void Listen(server * server);
 void Accept(server * server);
-void * handleConnection(void * connection);
+unsigned int handleConnection(void * connection);
 
 
 void Listen(server * server) {
@@ -28,28 +28,33 @@ void Accept(server *server) {
     while (server->listening) {
         conn * connection = AcceptConn(server->sock);
         if (!connection) {
-            free(connection);
             continue;
         }
 
-        pthread_t handleThread;
-        pthread_create(&handleThread, NULL, handleConnection, connection);
-        pthread_detach(handleThread);
+        uintptr_t handleThread = _beginthreadex(
+            NULL,       // security
+            0,          // stack size
+            handleConnection,
+            connection,
+            0,          // creation flags
+            NULL        // thread id
+        );
+
     }
 }
 
-void * handleConnection(void * void_conn) {
-    conn * connection = void_conn;
+
+unsigned int handleConnection(void * void_conn) {
+    printf("Connection established\n");
+    conn * connection = (void *) void_conn;
 
     char clientIP[INET_ADDRSTRLEN];
     inet_ntop(AF_INET, &connection->clientAddr.sin_addr, clientIP, sizeof(clientIP));
     printf("Client connected from %s:%d\n", clientIP, ntohs(connection->clientAddr.sin_port));
-
     const char *msg = "Hello from server!\n";
     send(connection->clientSock, msg, (int)strlen(msg), 0);
-
     free(connection);
-    return NULL;
+    return 0;
 }
 
 void DestroyServer(server * server) {
@@ -61,6 +66,7 @@ void FreeServer(server * server) {
     if (!server) return;
     DestroyServer(server);
     free(server);
+    WSACleanup();
 }
 
 server * InitServer(int port) {
@@ -77,6 +83,6 @@ int main() {
     server* server = InitServer(8080);
     Listen(server);
     Accept(server);
-    free(server);
+    FreeServer(server);
     return 0;
 }

@@ -47,17 +47,11 @@ int InitSocket(Csocket* csocket) {
         return 1;
     }
 
-    csocket->serverSock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-    if (csocket->serverSock == INVALID_SOCKET) {
-        free(csocket);
-        return 1;
-    }
 
     //create the tcp csocket pass AF_INET which means that it'cs of the ipv4 type
     csocket->serverSock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     if (csocket->serverSock == INVALID_SOCKET) {
-        printf("WSAStartup failed: %d\n", WSAGetLastError());
-        WSACleanup();
+        free(csocket);
         return 1;
     }
 
@@ -75,7 +69,6 @@ int InitSocket(Csocket* csocket) {
     if (bind(csocket->serverSock, (struct sockaddr*)&csocket->addr, sizeof(csocket->addr)) == SOCKET_ERROR) {
         printf("WSAStartup failed: %d\n", WSAGetLastError());
         closesocket(csocket->serverSock);
-        WSACleanup();
         return 1;
     }
     return 0;
@@ -87,7 +80,6 @@ int ListenToOne(Csocket* csocket) {
     if (listen(csocket->serverSock, 5) == SOCKET_ERROR) {
         printf("listen failed: %d\n", WSAGetLastError());
         closesocket(csocket->serverSock);
-        WSACleanup();
         return 1;
     }
     return 0;
@@ -107,8 +99,7 @@ conn * AcceptConn(Csocket* csocket) {
     SOCKET clientSock = accept(csocket->serverSock, (struct sockaddr*)&conn->clientAddr, &conn->clientAddrSize);
     if (clientSock == INVALID_SOCKET) {
         printf("accept failed: %d\n", WSAGetLastError());
-        closesocket(clientSock);
-        WSACleanup();
+        free(conn);
         return NULL;
     }
     conn->clientSock = clientSock;
