@@ -1,0 +1,9 @@
+{
+	"InstallScripts" : 
+	[
+		"C:/Users/Mxsxll/Documents/persoenlich/Hashmap/build/cmake_install.cmake",
+		"C:/Users/Mxsxll/Documents/persoenlich/Hashmap/build/src/cmake_install.cmake",
+		"C:/Users/Mxsxll/Documents/persoenlich/Hashmap/build/test/cmake_install.cmake"
+	],
+	"Parallel" : false
+}

@@ -121,3 +121,8 @@ void CloseSocket(Csocket* csocket) {
     closesocket(csocket->serverSock);
     WSACleanup();
 }
+
+void CloseConnection(conn* connection) {
+    closesocket(connection->clientSock);
+    free(connection);
+}

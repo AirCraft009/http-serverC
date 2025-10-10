@@ -47,19 +47,23 @@ void Accept(server *server) {
 
 unsigned __stdcall handleConnection(void * void_conn) {
     char buffer[BUFFSIZE];
-    int bytes;
+    int n;
     conn * connection = (void *) void_conn;
     char clientIP[INET_ADDRSTRLEN];
     inet_ntop(AF_INET, &connection->clientAddr.sin_addr, clientIP, sizeof(clientIP));
 
     while (1) {
         memset(&buffer, 0, BUFFSIZE);
-        bytes = recv(connection->clientSock, buffer, BUFFSIZE, 0);
-        if (bytes > 0){
-            buffer[bytes] = '\0';
-            printf("Client says: %s\n", buffer);
-            send(connection->clientSock, buffer, bytes, 0);
-        }else if (bytes == 0){
+        //n is the ammount of bytes read
+        n = recv(connection->clientSock, buffer, BUFFSIZE, 0);
+
+        if (n > 0){
+            // it puts \0 or a zero byte at buffer[n]
+            // because C is a language that has null-terminated strings
+            // when doing any operations like printf() on it they stop at n
+            buffer[n] = '\0';
+            
+        }else if (n == 0){
             //keeping only for now
             printf("Connection closed\n");
             break;
@@ -68,8 +72,7 @@ unsigned __stdcall handleConnection(void * void_conn) {
             break;
         }
     }
-
-    free(connection);
+    CloseConnection(connection);
     return 0;
 }
 
@@ -86,8 +89,8 @@ void FreeServer(server * server) {
 }
 
 server * InitServer(int port) {
-    server * server = malloc(sizeof(server));
-    if (!server) return NULL;
+    server * server = malloc(sizeof(*server));
+    if (!server) return nullptr;
     server->listening = false;
     server->sock = CreateSocket(port);
     InitSocket(server->sock);
