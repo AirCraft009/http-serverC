@@ -3,6 +3,7 @@
 //
 
 #include "parser.h"
+#include "..\\hashmap/hashmap.h"
 #include <windows.h>
 
 typedef struct {
@@ -10,9 +11,14 @@ typedef struct {
     char *Path;
     char *HtppType;
     byte *body;
-
 }Request;
 
 typedef struct {
-
+    hashmap *MethodMap;
+    hashmap *PathMap;
 }parser;
+
+
+*parser CreateParser() {
+
+}
