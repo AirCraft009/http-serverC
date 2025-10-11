@@ -1,2 +1,0 @@
-C:\msys64\mingw64\bin\ar.exe qc libHashmap.a CMakeFiles/Hashmap.dir/hashmap.c.obj CMakeFiles/Hashmap.dir/hash.c.obj
-C:\msys64\mingw64\bin\ranlib.exe libHashmap.a
