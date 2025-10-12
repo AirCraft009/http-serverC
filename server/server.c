@@ -1,5 +1,6 @@
 #include "socket.c"
 #include "server.h"
+#include "../parser/parser.c"
 
 #include <assert.h>
 #include <process.h>
@@ -62,6 +63,7 @@ unsigned __stdcall handleConnection(void * void_conn) {
             // because C is a language that has null-terminated strings
             // when doing any operations like printf() on it they stop at n
             buffer[n] = '\0';
+            Request * request = ParseRequest(buffer, n);
             
         }else if (n == 0){
             //keeping only for now

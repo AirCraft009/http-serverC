@@ -38,6 +38,7 @@ int addItem(hashmap *map, const char *key, void *value) {
         expandMap(map);
     }
 
+
     uint64_t hashval = hash(key);
     int maxIndex = map->capacity;
     //make the index conform to the size of the arr.
