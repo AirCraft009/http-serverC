@@ -2,10 +2,14 @@
 // Created by Mxsxll on 06.10.2025.
 //
 
-#include "parser.h"
 #include <windows.h>
 #include <string.h>
 #include "../hashmap/hashmap.h"
+
+
+char **strsplit(const char *input, const char *delim, size_t *count_out);
+void freeArr(char ** arr, size_t len);
+hashmap * ParseHeaders(char ** headers, int len);
 
 typedef struct {
     char *Method;
@@ -13,16 +17,12 @@ typedef struct {
     char *HtppType;
     hashmap *Headers;
     hashmap *Querys;
-    byte *body;
+    char *body;
     char *sourceDir;
 }Request;
 
-typedef struct {
 
-}Response;
-
-
-Request * NewRequest(char * method, char * path, char * htppType, hashmap * headers, byte * body) {
+Request * NewRequest(char * method, char * path, char * htppType, hashmap * headers, char * body) {
     Request * request = (Request *) malloc(sizeof(Request));
     memset(request, 0, sizeof(Request));
     request->Method = method;
@@ -45,8 +45,8 @@ Request * ParseRequest(char buff[], int buffLen) {
         return nullptr;
     }
 
-    // ok to convert to int maximum bufflen = 1024B
-    int headerlen = bodyStart - buff;
+    // ok to convert to int maximum buffer len = 1024B
+    int headerend = bodyStart - buff;
     // we can set it to \0 because strings are null terminated and you can Imagine the buffer like this
     /**
      *
@@ -59,10 +59,48 @@ Request * ParseRequest(char buff[], int buffLen) {
      *why this is important
      *apparently strtok the method to split strings changes the actual layout of the string so it's important to set this
      */
-    buff[headerlen] = '\0';
+    buff[headerend] = '\0';
+    // headerlen is passed as a ptr to strsplit it's modified inside the function
+    // there it takes the len of the string array
+    size_t headerlen;
+    size_t firslinelen;
+    char ** lines = strsplit(buff, "\n", &headerlen);
+    free(buff);
     //printf("buffer: %s\n", buff)
+    char ** startline = strsplit(lines[0], " ", &firslinelen);
+    if (firslinelen != 3) {
+        return nullptr;
+    }
+    char * method = startline[0];
+    char * path = startline[1];
+    char * htppType = startline[2];
 
 
+    int skip = sizeof(char *);
+    // lines + skip means the pointer will now point to
+    hashmap * headers = ParseHeaders((lines+skip), (headerlen-1));
+    //free the array
+    freeArr(lines, headerlen);
+    return NewRequest(method, path, htppType, headers, bodyStart);
+
+}
+
+
+hashmap * ParseHeaders(char ** headers, int len) {
+    if (len == 0) {
+        return nullptr;
+    }
+    hashmap * headermap = createHashmap(20, 10, 5);
+    memset(headermap, 0, sizeof(hashmap));
+    for (int i = 0; i < len; i++) {
+        size_t keyvalLen;
+        char ** keyvalue = strsplit(headers[i], ":", &keyvalLen);
+        if (keyvalLen != 2) {
+            continue;
+        }
+        addItem(headermap, keyvalue[0], keyvalue[1]);
+    }
+    return headermap;
 }
 
 char **strsplit(const char *input, const char *delim, size_t *count_out) {
@@ -75,6 +113,9 @@ char **strsplit(const char *input, const char *delim, size_t *count_out) {
 
     while (token) {
         // grow the array
+        // clion says that result may be 0 if realloc fails and it could leak the buffer
+        //I don't now how to fix it
+        //TODO: find a better way to do this
         result = realloc(result, sizeof(char*) * (count + 1));
         if (!result) {
             return nullptr;
@@ -87,6 +128,25 @@ char **strsplit(const char *input, const char *delim, size_t *count_out) {
     free(copy);
     *count_out = count;
     return result;
+}
+
+void freeArr(char **arr, size_t length) {
+    if (!arr) return;
+    for (size_t i = 0; i < length; ++i) {
+        // free everything seperatly because
+        /**
+         *char ** arr = [ptr1, ptr2, ptr3]
+         *
+         *somwhere in mem ptr1 points to the string "a\0"
+         *as does ptr2,3 etc.. to some other strings so free each ptr frees the actual mem
+         *of the individual strings
+         *storing it like this is good because each ptr is always the same lenght  the strings would fluctuate
+         *then we free the array to ensure the pointers being deletd and not pointing to null mem
+         *
+         */
+        free(arr[i]);
+    }
+    free(arr);
 }
 
 

@@ -1,7 +1,7 @@
 #include "socket.c"
 #include "server.h"
+#include "router.h"
 #include "../parser/parser.c"
-
 #include <assert.h>
 #include <process.h>
 #include <stdio.h>
@@ -41,7 +41,7 @@ void Accept(server *server) {
         if (hThread == nullptr) {
             printf("Error creating thread\n");
         }
-        CloseHandle( hThread );
+        CloseHandle(hThread);
     }
 }
 
@@ -59,11 +59,17 @@ unsigned __stdcall handleConnection(void * void_conn) {
         n = recv(connection->clientSock, buffer, BUFFSIZE, 0);
 
         if (n > 0){
+            // "abdfdfkjdf\0"
             // it puts \0 or a zero byte at buffer[n]
             // because C is a language that has null-terminated strings
             // when doing any operations like printf() on it they stop at n
             buffer[n] = '\0';
             Request * request = ParseRequest(buffer, n);
+
+            if (request == NULL) {
+                send(connection->clientSock, "HTTP/1.1 400 Bad Request\r\n\r\n", 26, 0);
+                break;
+            }
             
         }else if (n == 0){
             //keeping only for now
