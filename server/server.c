@@ -9,6 +9,7 @@
 typedef struct{
     Csocket* sock;
     bool listening;
+    router* router;
 }server;
 void Listen(server * server);
 void Accept(server * server);
@@ -70,6 +71,16 @@ unsigned __stdcall handleConnection(void * void_conn) {
                 send(connection->clientSock, "HTTP/1.1 400 Bad Request\r\n\r\n", 26, 0);
                 break;
             }
+
+            if (strcmp(request->HtppType, ClosingType) == 0) {
+                break;
+            }
+
+            char * connHeader = get(request->Headers, "Connection");
+            if (strcmp(connHeader, ClosingConnection) == 0) {
+                break;
+            }
+
             
         }else if (n == 0){
             //keeping only for now

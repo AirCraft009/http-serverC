@@ -10,6 +10,7 @@
 char **strsplit(const char *input, const char *delim, size_t *count_out);
 void freeArr(char ** arr, size_t len);
 hashmap * ParseHeaders(char ** headers, int len);
+char *strstrip(char *s);
 
 
 typedef struct Request{
@@ -72,6 +73,7 @@ Request * ParseRequest(char buff[], int buffLen) {
     // there it takes the len of the string array
     size_t headerlen;
     size_t firslinelen;
+
     char ** lines = strsplit(buff, "\n", &headerlen);
     //printf("buffer: %s\n", buff)
     char ** startline = strsplit(lines[0], " ", &firslinelen);
@@ -83,13 +85,17 @@ Request * ParseRequest(char buff[], int buffLen) {
     char * path = startline[1];
     char * htppType = startline[2];
 
-
-    int skip = sizeof(char *);
-    // lines + skip means the pointer will now point to
+    //remember if you add to lines then it skips int * sizeof(type) not just bytes found that out the hard way
+    //int skip = sizeof(char *);
+    // lines + skip means the pointer will now point to the next pointer beacause char**
+    int skip = 1;
     hashmap * headers = ParseHeaders((lines+skip), (headerlen-1));
     //free the array
-    freeArr(lines, headerlen);
-    free(buff);
+    //before that return the lines ptr to the original position
+    lines -= skip;
+    // don't free lines yet the vals are still inside off the hashmap
+    //freeArr(lines, headerlen+1);
+    //free(buff);
     return NewRequest(method, path, htppType, headers, bodyStart);
 
 }
@@ -103,23 +109,50 @@ hashmap * ParseHeaders(char ** headers, int len) {
     for (int i = 0; i < len-1; i++) {
         size_t keyvalLen;
         char ** keyvalue = strsplit(headers[i], ":", &keyvalLen);
-        if (keyvalLen != 3) {
+        if (keyvalLen != 2) {
             continue;
         }
+        if (keyvalue == nullptr) {
+            continue;
+        }
+        keyvalue[1] = strstrip(keyvalue[1]);
         addItem(headermap, keyvalue[0], keyvalue[1]);
     }
     return headermap;
 }
 
+//from the linux kernel
+char *strstrip(char *s){
+    size_t size;
+    char *end;
+
+    size = strlen(s);
+
+    if (!size)
+        return s;
+
+    end = s + size - 1;
+    while (end >= s && isspace(*end))
+        end--;
+    *(end + 1) = '\0';
+
+    while (*s && isspace(*s))
+        s++;
+
+    return s;
+}
+
 char **strsplit(const char *input, const char *delim, size_t *count_out) {
     char *copy = strdup(input);
+    // maxsize of copy is 1024
+    int maxlen = strlen(copy);
     if (!copy) return nullptr;
 
     size_t count = 0;
     char **result = nullptr;
     char *token = strtok(copy, delim);
     size_t tokensize = 0;
-    while (token) {
+    while (token && tokensize < maxlen) {
         tokensize += strlen(token)+1;
         // grow the array
         // clion says that result may be 0 if realloc fails and it could leak the buffer
