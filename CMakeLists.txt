@@ -13,5 +13,6 @@ add_library(https_serverC STATIC
         main.c
         server/internalhandlers.c
         server/router.h
+        server/socket.h
 )
 

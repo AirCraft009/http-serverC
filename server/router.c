@@ -3,7 +3,6 @@
 //
 #include "../hashmap/hashmap.h"
 #include "../parser/parser.h"
-#include "router.h"
 typedef struct {
     hashmap * routes;
     char * sourceDir;

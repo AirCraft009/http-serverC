@@ -1,7 +1,7 @@
-#include "socket.c"
+#include "socket.h"
 #include "server.h"
 #include "router.h"
-#include "../parser/parser.c"
+#include "../parser/parser.h"
 #include <assert.h>
 #include <process.h>
 #include <stdio.h>
@@ -64,7 +64,7 @@ unsigned __stdcall handleConnection(void * void_conn) {
             // because C is a language that has null-terminated strings
             // when doing any operations like printf() on it they stop at n
             buffer[n] = '\0';
-            Request * request = ParseRequest(buffer, n);
+            Request *request = ParseRequest(buffer, n);
 
             if (request == NULL) {
                 send(connection->clientSock, "HTTP/1.1 400 Bad Request\r\n\r\n", 26, 0);

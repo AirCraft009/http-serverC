@@ -2,7 +2,7 @@
 // Created by cocon on 13.10.2025.
 //
 
-#include "router.c"
+#include "router.h"
 
 Response * handle404(Request * request) {
     Response * response = NewResponse(request);

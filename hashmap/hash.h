@@ -7,5 +7,5 @@
 #include <stdint.h>
 #include "hash.c"
 
-static uint64_t hash(const char* key);
+
 #endif //HASHMAP_HASH_H

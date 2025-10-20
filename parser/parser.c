@@ -11,7 +11,8 @@ char **strsplit(const char *input, const char *delim, size_t *count_out);
 void freeArr(char ** arr, size_t len);
 hashmap * ParseHeaders(char ** headers, int len);
 
-typedef struct {
+
+typedef struct Request{
     char *Method;
     char *Path;
     char *HtppType;
@@ -34,6 +35,7 @@ Request * NewRequest(char * method, char * path, char * htppType, hashmap * head
 }
 
 Request * ParseRequest(char buff[], int buffLen) {
+
     // 46 is the smallest possible http request
     if (buffLen < 1 || strlen(buff) < 46) {
         return nullptr;
@@ -41,12 +43,18 @@ Request * ParseRequest(char buff[], int buffLen) {
 
     char * bodyStart = strstr(buff, "\r\n\r\n");
     // no \r\n line was found (invalid http)
-    if (bodyStart == NULL) {
+    if (bodyStart == nullptr) {
         return nullptr;
     }
+    // plus 3 because it points at the beginning of the sequence
+    // not plus 4 because we're going to overwrite that with \0
+    // to split header from body
+    bodyStart += 3;
 
     // ok to convert to int maximum buffer len = 1024B
     int headerend = bodyStart - buff;
+    // now increment to point to the beginning of body
+    bodyStart ++;
     // we can set it to \0 because strings are null terminated and you can Imagine the buffer like this
     /**
      *
@@ -65,12 +73,12 @@ Request * ParseRequest(char buff[], int buffLen) {
     size_t headerlen;
     size_t firslinelen;
     char ** lines = strsplit(buff, "\n", &headerlen);
-    free(buff);
     //printf("buffer: %s\n", buff)
     char ** startline = strsplit(lines[0], " ", &firslinelen);
     if (firslinelen != 3) {
         return nullptr;
     }
+
     char * method = startline[0];
     char * path = startline[1];
     char * htppType = startline[2];
@@ -81,6 +89,7 @@ Request * ParseRequest(char buff[], int buffLen) {
     hashmap * headers = ParseHeaders((lines+skip), (headerlen-1));
     //free the array
     freeArr(lines, headerlen);
+    free(buff);
     return NewRequest(method, path, htppType, headers, bodyStart);
 
 }
@@ -90,12 +99,11 @@ hashmap * ParseHeaders(char ** headers, int len) {
     if (len == 0) {
         return nullptr;
     }
-    hashmap * headermap = createHashmap(20, 10, 5);
-    memset(headermap, 0, sizeof(hashmap));
-    for (int i = 0; i < len; i++) {
+    hashmap * headermap = createHashmap(len, 10, 5);
+    for (int i = 0; i < len-1; i++) {
         size_t keyvalLen;
         char ** keyvalue = strsplit(headers[i], ":", &keyvalLen);
-        if (keyvalLen != 2) {
+        if (keyvalLen != 3) {
             continue;
         }
         addItem(headermap, keyvalue[0], keyvalue[1]);
@@ -110,8 +118,9 @@ char **strsplit(const char *input, const char *delim, size_t *count_out) {
     size_t count = 0;
     char **result = nullptr;
     char *token = strtok(copy, delim);
-
+    size_t tokensize = 0;
     while (token) {
+        tokensize += strlen(token)+1;
         // grow the array
         // clion says that result may be 0 if realloc fails and it could leak the buffer
         //I don't now how to fix it
@@ -122,7 +131,7 @@ char **strsplit(const char *input, const char *delim, size_t *count_out) {
         }
         result[count] = strdup(token);
         count++;
-        token = strtok(nullptr, delim);
+        token = strtok(copy+tokensize, delim);
     }
 
     free(copy);
