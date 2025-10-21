@@ -48,7 +48,7 @@ void Accept(server *server) {
 
 
 unsigned __stdcall handleConnection(void * void_conn) {
-    char buffer[BUFFSIZE];
+    byte buffer[BUFFSIZE];
     int n;
     conn * connection = (void *) void_conn;
     char clientIP[INET_ADDRSTRLEN];

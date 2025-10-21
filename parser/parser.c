@@ -35,14 +35,13 @@ Request * NewRequest(char * method, char * path, char * htppType, hashmap * head
     return request;
 }
 
-Request * ParseRequest(char buff[], int buffLen) {
+Request * ParseRequest(byte buff[], int buffLen) {
 
-    // 46 is the smallest possible http request
-    if (buffLen < 1 || strlen(buff) < 46) {
+    if (buffLen < 1 ) {
         return nullptr;
     }
 
-    char * bodyStart = strstr(buff, "\r\n\r\n");
+    byte * bodyStart = strstr(buff, "\r\n\r\n");
     // no \r\n line was found (invalid http)
     if (bodyStart == nullptr) {
         return nullptr;
