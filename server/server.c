@@ -2,6 +2,7 @@
 #include "server.h"
 #include "router.h"
 #include "../parser/parser.h"
+#include "../threadpool/thpool.h"
 #include <assert.h>
 #include <process.h>
 #include <stdio.h>
@@ -10,10 +11,11 @@ typedef struct{
     Csocket* sock;
     bool listening;
     router* router;
+    int coreNum;
 }server;
 void Listen(server * server);
 void Accept(server * server);
-unsigned __stdcall handleConnection(void * void_conn);
+void handleConnection(void * void_conn);
 
 
 void Listen(server * server) {
@@ -29,25 +31,28 @@ void Accept(server *server) {
         Listen(server);
     }
 
-    unsigned threadID;
-
+    threadpool pool = thpool_init(server->coreNum);
     while (server->listening) {
         conn * connection = AcceptConn(server->sock);
         if (!connection) {
             continue;
         }
-
+        thpool_add_work(pool, handleConnection, (void*)connection);
         // read socket/AcceptConn about the problems with the thread I had
+        // old code was using a single thread for each connection not efficient now using a work stealing pool
+        /**
         HANDLE hThread = (HANDLE) _beginthreadex(NULL, 0, handleConnection, connection, 0, &threadID);
         if (hThread == nullptr) {
             printf("Error creating thread\n");
         }
         CloseHandle(hThread);
+        */
     }
+    thpool_destroy(pool);
 }
 
 
-unsigned __stdcall handleConnection(void * void_conn) {
+void handleConnection(void * void_conn) {
     byte buffer[BUFFSIZE];
     int n;
     conn * connection = (void *) void_conn;
@@ -92,7 +97,6 @@ unsigned __stdcall handleConnection(void * void_conn) {
         }
     }
     CloseConnection(connection);
-    return 0;
 }
 
 void DestroyServer(server * server) {
@@ -113,6 +117,12 @@ server * InitServer(int port) {
     server->listening = false;
     server->sock = CreateSocket(port);
     InitSocket(server->sock);
+    SYSTEM_INFO sysinfo;
+    GetSystemInfo(&sysinfo);
+    server->coreNum = sysinfo.dwNumberOfProcessors;
+    if (server->coreNum == 0) {
+        server->coreNum = 2;
+    }
     return server;
 }
 
