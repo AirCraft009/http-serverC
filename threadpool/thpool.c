@@ -32,7 +32,13 @@
 #include <pthread_np.h>
 #endif
 
-#include "../thpool.h"
+#include "thpool.h"
+#ifndef _WIN32
+#include <signal.h>
+#endif
+
+
+
 
 #ifdef THPOOL_DEBUG
 #define THPOOL_DEBUG 1
@@ -262,12 +268,17 @@ void thpool_destroy(thpool_* thpool_p){
 
 
 /* Pause all threads in threadpool */
+#ifndef _WIN32
 void thpool_pause(thpool_* thpool_p) {
-	int n;
-	for (n=0; n < thpool_p->num_threads_alive; n++){
-		pthread_kill(thpool_p->threads[n]->pthread, SIGUSR1);
-	}
+    for (int n=0; n < thpool_p->num_threads_alive; n++){
+        pthread_kill(thpool_p->threads[n]->pthread, SIGUSR1);
+    }
 }
+#else
+void thpool_pause(thpool_* thpool_p) {
+    (void)thpool_p;  /* no-op on Windows */
+}
+#endif
 
 
 /* Resume all threads in threadpool */
@@ -353,15 +364,15 @@ static void* thread_do(struct thread* thread_p){
 
 	/* Assure all threads have been created before starting serving */
 	thpool_* thpool_p = thread_p->thpool_p;
-
-	/* Register signal handler */
-	struct sigaction act;
-	sigemptyset(&act.sa_mask);
-	act.sa_flags = SA_ONSTACK;
-	act.sa_handler = thread_hold;
-	if (sigaction(SIGUSR1, &act, NULL) == -1) {
-		err("thread_do(): cannot handle SIGUSR1");
-	}
+    #ifndef _WIN32
+    struct sigaction act;
+    sigemptyset(&act.sa_mask);
+    act.sa_flags = SA_ONSTACK;
+    act.sa_handler = thread_hold;
+    if (sigaction(SIGUSR1, &act, NULL) == -1) {
+        err("thread_do(): cannot handle SIGUSR1");
+    }
+	#endif
 
 	/* Mark thread as alive (initialized) */
 	pthread_mutex_lock(&thpool_p->thcount_lock);
