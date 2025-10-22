@@ -35,13 +35,13 @@ Request * NewRequest(char * method, char * path, char * htppType, hashmap * head
     return request;
 }
 
-Request * ParseRequest(byte buff[], int buffLen) {
+Request * ParseRequest(char buff[], int buffLen) {
 
     if (buffLen < 1 ) {
         return nullptr;
     }
 
-    byte * bodyStart = strstr(buff, "\r\n\r\n");
+    char * bodyStart = strstr(buff, "\r\n\r\n");
     // no \r\n line was found (invalid http)
     if (bodyStart == nullptr) {
         return nullptr;
@@ -95,6 +95,7 @@ Request * ParseRequest(byte buff[], int buffLen) {
     // don't free lines yet the vals are still inside off the hashmap
     //freeArr(lines, headerlen+1);
     //free(buff);
+    printf("path: %s\n", path);
     return NewRequest(method, path, htppType, headers, bodyStart);
 
 }
@@ -189,6 +190,7 @@ void freeArr(char **arr, size_t length) {
     }
     free(arr);
 }
+
 
 
 

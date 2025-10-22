@@ -44,15 +44,12 @@ void setRoute(router * router, char * method, char * path, void * handlerfunc) {
 
 Response * useRoute(router * router, char * path, Request * request) {
     size_t linelen;
-    char ** linearr = strsplit(path, " ", &linelen);
-    char * method = linearr[0];
-    char * rawPath = linearr[1];
-    hashmap * route = get(router->routes, method);
+    hashmap * route = get(router->routes, request->Method);
     if (route == NULL) {
         return NULL;
     }
 
-    void * handlerfunc = get(route, rawPath);
+    void * handlerfunc = get(route, path);
     if (handlerfunc == NULL) {
         return NULL;
     }

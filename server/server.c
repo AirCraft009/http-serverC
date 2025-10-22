@@ -13,9 +13,16 @@ typedef struct{
     router* router;
     int coreNum;
 }server;
+
+typedef struct {
+    server* server;
+    conn * conn;
+}serverConn;
+
 void Listen(server * server);
 void Accept(server * server);
-void handleConnection(void * void_conn);
+void handleConnection(void * void_serverConn);
+Response * handle404(Request * request);
 
 
 void Listen(server * server) {
@@ -37,7 +44,10 @@ void Accept(server *server) {
         if (!connection) {
             continue;
         }
-        thpool_add_work(pool, handleConnection, (void*)connection);
+        serverConn * serveconn = calloc(sizeof(serverConn), 1);
+        serveconn->server = server;
+        serveconn->conn = connection;
+        thpool_add_work(pool, handleConnection, (void*)serveconn);
         // read socket/AcceptConn about the problems with the thread I had
         // old code was using a single thread for each connection not efficient now using a work stealing pool
         /**
@@ -52,10 +62,12 @@ void Accept(server *server) {
 }
 
 
-void handleConnection(void * void_conn) {
-    byte buffer[BUFFSIZE];
+void handleConnection(void * void_serverConn) {
+    char buffer[BUFFSIZE];
     int n;
-    conn * connection = (void *) void_conn;
+    serverConn * server_conn = (void *) void_serverConn;
+    server * server = server_conn->server;
+    conn * connection = server_conn->conn;
     char clientIP[INET_ADDRSTRLEN];
     inet_ntop(AF_INET, &connection->clientAddr.sin_addr, clientIP, sizeof(clientIP));
 
@@ -71,10 +83,15 @@ void handleConnection(void * void_conn) {
             // when doing any operations like printf() on it they stop at n
             buffer[n] = '\0';
             Request *request = ParseRequest(buffer, n);
-
             if (request == NULL) {
                 send(connection->clientSock, "HTTP/1.1 400 Bad Request\r\n\r\n", 26, 0);
                 break;
+            }
+            Response * response = useRoute(server->router, request->Path, request);
+            char
+            send(connection->clientSock, , , 0);
+            if (WSAGetLastError()) {
+                printf("WSAGetLastError(): %d\n", WSAGetLastError());
             }
 
             if (strcmp(request->HtppType, ClosingType) == 0) {
@@ -117,6 +134,7 @@ server * InitServer(int port) {
     server->listening = false;
     server->sock = CreateSocket(port);
     InitSocket(server->sock);
+    server->router = CreateRouter();
     SYSTEM_INFO sysinfo;
     GetSystemInfo(&sysinfo);
     server->coreNum = sysinfo.dwNumberOfProcessors;
@@ -126,12 +144,27 @@ server * InitServer(int port) {
     return server;
 }
 
+char * formatResponse(Response * response) {
+
+}
+
 
 int main() {
     server* server = InitServer(8080);
+    setRoute(server->router, "GET", "/", &handle404);
     Listen(server);
     Accept(server);
     printf("ending");
     FreeServer(server);
     return 0;
+}
+
+Response * handle404(Request * request) {
+    Response * response = NewResponse(request);
+    response->Headers = createHashmap(20, 10, 5);
+    addItem(response->Headers, "Content-Type", "text/html");
+    addItem(response->Headers, "Connection", "close");
+    addItem(response->Headers, "Content-Length", "14");
+    response->body = "Hello World !";
+    return response;
 }
