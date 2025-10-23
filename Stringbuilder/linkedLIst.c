@@ -92,6 +92,24 @@ Node * getNodeCurrentAssured(LinkedList * list,  int index) {
 }
 
 
+//meant to be used when iterating
+Node * getNodeIteration(LinkedList * list, int index) {
+    assert(list);
+    assert(list->current);
+    if (list->size <= index) {
+        return nullptr;
+    }
+    if (index >= list->current->index) {
+        Node * returnNode = getNodeCurrentAssured(list, index);
+        list->current = returnNode;
+        return returnNode;
+    }
+    list->current = list->tail;
+    //can only be called once the second time current is the 0th node.
+    return getNodeIteration(list, index);
+}
+
+
 
 
 
