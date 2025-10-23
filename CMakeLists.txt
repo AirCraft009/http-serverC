@@ -24,4 +24,8 @@ add_executable(http_serverC
         server/socket.h
         threadpool/thpool.c
         threadpool/thpool.h
-        main.c)
+        main.c
+        Stringbuilder/StringBuilder.c
+        Stringbuilder/StringBuilder.h
+        Stringbuilder/linkedLIst.c
+        Stringbuilder/linkedLIst.h)
