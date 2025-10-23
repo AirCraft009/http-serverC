@@ -6,6 +6,8 @@
 #include <assert.h>
 #include <process.h>
 #include <stdio.h>
+#include <stdbool.h>
+#include "http_statuscode.h"
 
 typedef struct{
     Csocket* sock;
@@ -145,6 +147,9 @@ server * InitServer(int port) {
 }
 
 char * formatResponse(Response * response) {
+}
+
+char * formatStartline(Response  * response) {
 
 }
 

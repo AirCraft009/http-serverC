@@ -13,6 +13,7 @@ typedef struct {
     char * HttpVersion;
     hashmap * Headers;
     char * body;
+    int responseCode;
 }Response;
 
 Response * useRoute(router * router, char * path, Request * request);
