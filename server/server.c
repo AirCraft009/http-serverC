@@ -6,6 +6,7 @@
 #include <assert.h>
 #include <process.h>
 #include <stdio.h>
+#include "../Stringbuilder/StringBuilder.h"
 #include <stdbool.h>
 #include "http_statuscode.h"
 
@@ -25,6 +26,9 @@ void Listen(server * server);
 void Accept(server * server);
 void handleConnection(void * void_serverConn);
 Response * handle404(Request * request);
+void formatStartline(Response  * response, StringBuilder * responseBuilder);
+void formatResponseHeaders(Response  * response, StringBuilder * responseBuilder);
+char * formatResponse(Response * response);
 
 
 void Listen(server * server) {
@@ -78,6 +82,7 @@ void handleConnection(void * void_serverConn) {
         //n is the ammount of bytes read
         n = recv(connection->clientSock, buffer, BUFFSIZE, 0);
 
+
         if (n > 0){
             // "abdfdfkjdf\0"
             // it puts \0 or a zero byte at buffer[n]
@@ -90,11 +95,13 @@ void handleConnection(void * void_serverConn) {
                 break;
             }
             Response * response = useRoute(server->router, request->Path, request);
-            char
-            send(connection->clientSock, , , 0);
             if (WSAGetLastError()) {
                 printf("WSAGetLastError(): %d\n", WSAGetLastError());
             }
+
+            char* responseBuffer = formatResponse(response);
+            printf("%s\n", responseBuffer);
+            send(connection->clientSock, responseBuffer ,strlen(responseBuffer) , 0);
 
             if (strcmp(request->HtppType, ClosingType) == 0) {
                 break;
@@ -147,10 +154,39 @@ server * InitServer(int port) {
 }
 
 char * formatResponse(Response * response) {
+    StringBuilder *responseBuilder = createStringBuilder();
+    formatStartline(response, responseBuilder);
+    formatResponseHeaders(response, responseBuilder);
+    append(responseBuilder, "\r\n");
+    printf("hey the body is here");
+    append(responseBuilder, response->body);
+    return toString(responseBuilder);
 }
 
-char * formatStartline(Response  * response) {
+void formatStartline(Response  * response, StringBuilder * responseBuilder) {
+    append(responseBuilder, response->HttpVersion);
+    append(responseBuilder, " ");
+    //any responseCode should at max be 4 long 404, 200 etc
+    char responseString[4];
+    sprintf(responseString,"%d", response->responseCode);
+    append(responseBuilder, responseString);
+    append(responseBuilder, " ");
+    append(responseBuilder, http_status_to_string(response->responseCode));
+    append(responseBuilder, "\r\n");
+}
 
+void formatResponseHeaders(Response  * response, StringBuilder * responseBuilder) {
+    //iterating over capacity instead of size because it's not given where the values will be
+    for (int i = 0; i < response->Headers->capacity; i++) {
+        item * header = getIndex(response->Headers, i);
+        if (header == NULL || header->value == NULL || header->key == NULL || strcmp(header->key, "") == 0) {
+            continue;
+        }
+        append(responseBuilder, header->key );
+        append(responseBuilder, ": ");
+        append(responseBuilder, header->value);
+        append(responseBuilder, "\r\n");
+    }
 }
 
 
@@ -170,6 +206,7 @@ Response * handle404(Request * request) {
     addItem(response->Headers, "Content-Type", "text/html");
     addItem(response->Headers, "Connection", "close");
     addItem(response->Headers, "Content-Length", "14");
+    response->responseCode = 404;
     response->body = "Hello World !";
     return response;
 }

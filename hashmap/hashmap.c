@@ -109,6 +109,17 @@ void * get(hashmap *map, char * key) {
     return NULL;
 };
 
+//used only for iterating over the map order will not be kept
+//this method is still helpfull
+item *getIndex(hashmap *map, int index) {
+    assert(map != NULL);
+    if (index >= map->capacity) {
+        return nullptr;
+    }
+    return &map->data[index];
+}
+
+
 //returns a hashmap
 //
 //growingRate determines how many more items should be added
@@ -125,7 +136,7 @@ hashmap * createHashmap(int initSize,int growingRate, int bound) {
     map->bound = bound;
     map->growRate = growingRate;
     map->size = 0;
-    //I made a mistake use c alloc to ensure 0 initialized memory
+    //I made a mistake use calloc to ensure 0 initialized memory
     map->data = calloc(initSize ,sizeof(item));
     return map;
 };

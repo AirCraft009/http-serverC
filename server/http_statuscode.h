@@ -2,6 +2,6 @@
 #define HTTP_STATUS_H
 
 // Function: return standard HTTP reason phrase
-const char* http_status_to_string(int code);
+#include "http_statuscode.c"
 
 #endif // HTTP_STATUS_H

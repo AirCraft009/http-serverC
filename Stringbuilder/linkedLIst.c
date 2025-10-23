@@ -1,26 +1,35 @@
 //
 // Created by Mxsxll on 23.10.2025.
 //
-
-#include "linkedLIst.h"
-
 #include <assert.h>
 #include <stdlib.h>
 
 typedef struct Node{
     struct Node *next;
     char *data;
+    size_t lenght;
     int index;
 }Node;
 
-typedef struct LinkedList {
+typedef struct{
     Node *head;
     Node *tail;
     int size;
+    //sum of all lenghts in the nodes
+    size_t lenghtSum;
     Node *current;
 }LinkedList;
 
 
+Node * getNodeIteration(LinkedList * list, int index);
+LinkedList * createLinkedList();
+Node * createNode(char * data, size_t length);
+void freeNode(Node * node);
+void freeLinkedList(LinkedList * list);
+void addNewNode(char * data, size_t lenght, LinkedList * list);
+void addNode(Node * newNode, LinkedList * list);
+Node * getNode(LinkedList * list, int index);
+Node * nextNode(LinkedList * list);
 Node * getNodeCurrentAssured(LinkedList * list,  int index);
 
 LinkedList * createLinkedList() {
@@ -28,12 +37,35 @@ LinkedList * createLinkedList() {
     list->head = nullptr;
     list->tail = nullptr;
     list->current = nullptr;
+    list->size = 0;
+    list->lenghtSum = 0;
     return list;
 }
 
-Node * createNode(char * data) {
+void freeLinkedList(LinkedList * list) {
+    assert(list);
+    assert(list->tail);
+    Node * iterNode = list->tail;
+    for (int i = 0; i < list->size; i++) {
+        Node * nextNode = iterNode->next;
+        freeNode(iterNode);
+        iterNode = nextNode;
+    }
+    free(list);
+}
+
+void freeNode(Node * node) {
+    if (!node) return;
+    //data soll nicht gefreet werden
+    //weil es haüfig nicht als heap var übergeben oder falls schon vom enduser gehandelt werden muss
+    free(node);
+}
+
+Node * createNode(char * data, size_t length) {
     Node *node = malloc(sizeof(Node));
     node->data = data;
+    node->lenght = length;
+    node->next = nullptr;
     return node;
 }
 
@@ -41,14 +73,17 @@ void addNode(Node * node, LinkedList * list) {
     assert(node);
     if (list->head != nullptr) {
         list->head->next = node;
+    }else {
+        list->tail = node;
     }
     list->head = node;
     node->index = list->size;
     list->size ++;
+    list->lenghtSum += node->lenght;
 }
 
-void addNewNode(char * data, LinkedList * list) {
-    Node * newNode = createNode(data);
+void addNewNode(char * data, size_t lenght ,LinkedList * list) {
+    Node * newNode = createNode(data, lenght);
     addNode(newNode, list);
 }
 

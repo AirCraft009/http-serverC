@@ -1,8 +1,7 @@
-#include "http_status.h"
 
 typedef struct {
     int code;
-    const char *msg;
+    char *msg;
 } HttpStatusEntry;
 
 static const HttpStatusEntry http_status_table[] = {
@@ -29,7 +28,7 @@ static const HttpStatusEntry http_status_table[] = {
 
 #define HTTP_STATUS_TABLE_LEN (sizeof(http_status_table) / sizeof(HttpStatusEntry))
 
-const char* http_status_to_string(int code) {
+char* http_status_to_string(int code) {
     for (int i = 0; i < HTTP_STATUS_TABLE_LEN; i++) {
         if (http_status_table[i].code == code)
             return http_status_table[i].msg;
