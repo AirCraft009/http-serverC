@@ -31,10 +31,13 @@ Response * handle404(Request * request);
 
 int main() {
     int len = strlen(rawReq);
-    char * buff = malloc(sizeof(char) * len);
+    char * buff = malloc(sizeof(char) * len+1);
     strcpy(buff, rawReq);
 
     Request * request = ParseRequest(buff, len);
+    if (request == NULL) {
+        printf("idk how this is possible");
+    }
     Response * response = handle404(request);
     printf("good response\n");
     char * responseString = formatResponse(response);

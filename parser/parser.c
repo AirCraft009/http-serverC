@@ -1,8 +1,6 @@
 //
 // Created by Mxsxll on 06.10.2025.
 //
-
-#include <windows.h>
 #include <string.h>
 #include "../hashmap/hashmap.h"
 
@@ -117,6 +115,7 @@ hashmap * ParseHeaders(char ** headers, int len) {
         }
         keyvalue[1] = strstrip(keyvalue[1]);
         addItem(headermap, keyvalue[0], keyvalue[1]);
+        freeArr(keyvalue, keyvalLen);
     }
     return headermap;
 }
@@ -132,11 +131,12 @@ char *strstrip(char *s){
         return s;
 
     end = s + size - 1;
-    while (end >= s && isspace(*end))
+    while (end >= s && (*end) == ' ')
+        printf("true");
         end--;
     *(end + 1) = '\0';
 
-    while (*s && isspace(*s))
+    while (*s && (*s) == ' ')
         s++;
 
     return s;
@@ -145,8 +145,9 @@ char *strstrip(char *s){
 char **strsplit(const char *input, const char *delim, size_t *count_out) {
     char *copy = strdup(input);
     // maxsize of copy is 1024
-    int maxlen = strlen(copy);
     if (!copy) return NULL;
+    int maxlen = strlen(copy);
+    printf("len: %d\n", maxlen);
 
     size_t count = 0;
     char **result = NULL;
@@ -158,13 +159,14 @@ char **strsplit(const char *input, const char *delim, size_t *count_out) {
         // clion says that result may be 0 if realloc fails and it could leak the buffer
         //I don't now how to fix it
         //TODO: find a better way to do this
-        result = realloc(result, sizeof(char*) * (count + 1));
-        if (!result) {
+        char ** newResult = realloc(result, sizeof(char*) * (count + 1));
+        if (!newResult) {
             return NULL;
         }
+        result = newResult;
         result[count] = strdup(token);
         count++;
-        token = strtok(copy+tokensize, delim);
+        token = strtok_r(copy+tokensize, delim, &copy+tokensize);
     }
 
     free(copy);
@@ -186,7 +188,9 @@ void freeArr(char **arr, size_t length) {
          *then we free the array to ensure the pointers being deletd and not pointing to null mem
          *
          */
-        free(arr[i]);
+        if (!arr[i]) {
+            free(arr[i]);
+        }
     }
     free(arr);
 }

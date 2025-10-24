@@ -62,13 +62,17 @@ int addItem(hashmap *map, const char *key, void *value) {
         }
         if (map->data[i].key == NULL) {
             map->data[i].key = strdup(key);
-            map->data[i].value = value;
+            void * copyVal = malloc(sizeof (void *));
+            memcpy(copyVal, value, sizeof(void *));
+            map->data[i].value = copyVal;
             map->size++;
             return 0;
         }
         // if the key already exists overwrite the value
         if (strcmp(map->data[i].key, key) == 0) {
-            map->data[i].value = value;
+            void * copyVal = malloc(sizeof (void *));
+            memcpy(copyVal, value, sizeof(void *));
+            map->data[i].value = copyVal;
             map->size++;
             return 0;
         }
@@ -148,6 +152,12 @@ hashmap * createBaseMap(int initSize) {
 
 void destroyHashmap(hashmap *map) {
     if (!map) return;
+    for (int i = 0; i < map->capacity; i++) {
+        if (getIndex(map, i)) {
+            free(map->data[i].key);
+            free(map->data[i].value);
+        }
+    }
     free(map->data);
     free(map);
 };
