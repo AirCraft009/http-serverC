@@ -38,13 +38,13 @@ Request * NewRequest(char * method, char * path, char * htppType, hashmap * head
 Request * ParseRequest(char buff[], int buffLen) {
 
     if (buffLen < 1 ) {
-        return nullptr;
+        return NULL;
     }
 
     char * bodyStart = strstr(buff, "\r\n\r\n");
     // no \r\n line was found (invalid http)
-    if (bodyStart == nullptr) {
-        return nullptr;
+    if (bodyStart == NULL) {
+        return NULL;
     }
     // plus 3 because it points at the beginning of the sequence
     // not plus 4 because we're going to overwrite that with \0
@@ -77,7 +77,7 @@ Request * ParseRequest(char buff[], int buffLen) {
     //printf("buffer: %s\n", buff)
     char ** startline = strsplit(lines[0], " ", &firslinelen);
     if (firslinelen != 3) {
-        return nullptr;
+        return NULL;
     }
 
     char * method = startline[0];
@@ -103,7 +103,7 @@ Request * ParseRequest(char buff[], int buffLen) {
 
 hashmap * ParseHeaders(char ** headers, int len) {
     if (len == 0) {
-        return nullptr;
+        return NULL;
     }
     hashmap * headermap = createHashmap(len, 10, 5);
     for (int i = 0; i < len-1; i++) {
@@ -112,7 +112,7 @@ hashmap * ParseHeaders(char ** headers, int len) {
         if (keyvalLen != 2) {
             continue;
         }
-        if (keyvalue == nullptr) {
+        if (keyvalue == NULL) {
             continue;
         }
         keyvalue[1] = strstrip(keyvalue[1]);
@@ -146,10 +146,10 @@ char **strsplit(const char *input, const char *delim, size_t *count_out) {
     char *copy = strdup(input);
     // maxsize of copy is 1024
     int maxlen = strlen(copy);
-    if (!copy) return nullptr;
+    if (!copy) return NULL;
 
     size_t count = 0;
-    char **result = nullptr;
+    char **result = NULL;
     char *token = strtok(copy, delim);
     size_t tokensize = 0;
     while (token && tokensize < maxlen) {
@@ -160,7 +160,7 @@ char **strsplit(const char *input, const char *delim, size_t *count_out) {
         //TODO: find a better way to do this
         result = realloc(result, sizeof(char*) * (count + 1));
         if (!result) {
-            return nullptr;
+            return NULL;
         }
         result[count] = strdup(token);
         count++;

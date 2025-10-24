@@ -3,6 +3,7 @@
 //
 #include <assert.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 typedef struct Node{
     struct Node *next;
@@ -34,9 +35,9 @@ Node * getNodeCurrentAssured(LinkedList * list,  int index);
 
 LinkedList * createLinkedList() {
     LinkedList *list = malloc(sizeof(LinkedList));
-    list->head = nullptr;
-    list->tail = nullptr;
-    list->current = nullptr;
+    list->head = NULL;
+    list->tail = NULL;
+    list->current = NULL;
     list->size = 0;
     list->lenghtSum = 0;
     return list;
@@ -65,13 +66,13 @@ Node * createNode(char * data, size_t length) {
     Node *node = malloc(sizeof(Node));
     node->data = data;
     node->lenght = length;
-    node->next = nullptr;
+    node->next = NULL;
     return node;
 }
 
 void addNode(Node * node, LinkedList * list) {
     assert(node);
-    if (list->head != nullptr) {
+    if (list->head != NULL) {
         list->head->next = node;
     }else {
         list->tail = node;
@@ -84,7 +85,9 @@ void addNode(Node * node, LinkedList * list) {
 
 void addNewNode(char * data, size_t lenght ,LinkedList * list) {
     Node * newNode = createNode(data, lenght);
+    printf("added new node\n");
     addNode(newNode, list);
+    printf("successfull added new node\n");
 }
 
 Node * nextNode(LinkedList * list) {
@@ -103,7 +106,7 @@ Node * getNode(LinkedList * list, int index) {
         return getNodeCurrentAssured(list, index);
     }
     if (list->size <= index) {
-        return nullptr;
+        return NULL;
     }
     Node * iterNode = list->tail;
     for (int i = 0; i < index; i++) {
@@ -117,7 +120,7 @@ Node * getNode(LinkedList * list, int index) {
 Node * getNodeCurrentAssured(LinkedList * list,  int index) {
     //index out of bounds
     if (list->size <= index) {
-        return nullptr;
+        return NULL;
     }
     Node * iterNode = list->current;
     for (int i = iterNode->index; i < index; i++) {
@@ -132,7 +135,7 @@ Node * getNodeIteration(LinkedList * list, int index) {
     assert(list);
     assert(list->current);
     if (list->size <= index) {
-        return nullptr;
+        return NULL;
     }
     if (index >= list->current->index) {
         Node * returnNode = getNodeCurrentAssured(list, index);

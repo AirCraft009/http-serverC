@@ -28,4 +28,5 @@ add_executable(http_serverC
         Stringbuilder/StringBuilder.c
         Stringbuilder/StringBuilder.h
         Stringbuilder/linkedLIst.c
-        Stringbuilder/linkedLIst.h)
+        Stringbuilder/linkedLIst.h
+        test/formatTest.c)

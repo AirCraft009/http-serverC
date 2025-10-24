@@ -3,6 +3,10 @@
 //
 #include "../hashmap/hashmap.h"
 #include "../parser/parser.h"
+#include "../server/router.h"
+#include "../Stringbuilder/StringBuilder.h"
+#include "../server/http_statuscode.h"
+
 typedef struct {
     hashmap * routes;
     char * sourceDir;
@@ -17,6 +21,9 @@ typedef struct {
 }Response;
 
 Response * useRoute(router * router, char * path, Request * request);
+void formatStartline(Response  * response, StringBuilder * responseBuilder);
+void formatResponseHeaders(Response  * response, StringBuilder * responseBuilder);
+char * formatResponse(Response * response);
 
 Response * NewResponse(Request * request) {
     Response *response = malloc(sizeof(response));
@@ -55,4 +62,50 @@ Response * useRoute(router * router, char * path, Request * request) {
         return NULL;
     }
     return ((Response * (*) (Request *))handlerfunc)(request);
+}
+
+
+char * formatResponse(Response * response) {
+    printf("starting formatting\n");
+    StringBuilder *responseBuilder = createStringBuilder();
+    printf("starting firstline\n");
+    formatStartline(response, responseBuilder);
+    printf("starting responseHeaders\n");
+    formatResponseHeaders(response, responseBuilder);
+    printf("starting responseBody\n");
+    append(responseBuilder, "\r\n");
+    append(responseBuilder, response->body);
+    printf("starting to string\n");
+    return toString(responseBuilder);
+}
+
+void formatStartline(Response  * response, StringBuilder * responseBuilder) {
+    append(responseBuilder, response->HttpVersion);
+    append(responseBuilder, " ");
+    //any responseCode should at max be 4 long 404, 200 etc
+    char * responseString = malloc(sizeof(char) * 4);
+    sprintf(responseString,"%d", response->responseCode);
+    append(responseBuilder, responseString);
+    //free the string because it's copied in append
+    free(responseString);
+    append(responseBuilder, " ");
+    append(responseBuilder, http_status_to_string(response->responseCode));
+    append(responseBuilder, "\r\n");
+}
+
+void formatResponseHeaders(Response  * response, StringBuilder * responseBuilder) {
+    //iterating over capacity instead of size because it's not given where the values will
+    printf("starting in method");
+    for (int i = 0; i < response->Headers->capacity; i++) {
+        item * header = getIndex(response->Headers, i);
+        if (header == NULL || header->value == NULL || header->key == NULL || strcmp(header->key, "") == 0) {
+            continue;
+        }
+        printf("found valid pair\n");
+        printf("key: %s, val: %s\n", header->key, (char *)header->value);
+        append(responseBuilder, header->key );
+        append(responseBuilder, ": ");
+        append(responseBuilder, header->value);
+        append(responseBuilder, "\r\n");
+    }
 }

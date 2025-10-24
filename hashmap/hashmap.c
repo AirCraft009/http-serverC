@@ -114,7 +114,7 @@ void * get(hashmap *map, char * key) {
 item *getIndex(hashmap *map, int index) {
     assert(map != NULL);
     if (index >= map->capacity) {
-        return nullptr;
+        return NULL;
     }
     return &map->data[index];
 }
