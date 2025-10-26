@@ -13,7 +13,7 @@
 typedef struct{
     Csocket* sock;
     bool listening;
-    router* router;
+    Router* router;
     int coreNum;
 }server;
 

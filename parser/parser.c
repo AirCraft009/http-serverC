@@ -9,6 +9,7 @@ char **strsplit(const char *input, const char *delim, size_t *count_out);
 void freeArr(char ** arr, size_t len);
 hashmap * ParseHeaders(char ** headers, int len);
 char *strstrip(char *s);
+char *strstrip_safe(char *s);
 
 
 typedef struct Request{
@@ -16,7 +17,7 @@ typedef struct Request{
     char *Path;
     char *HtppType;
     hashmap *Headers;
-    hashmap *Querys;
+    hashmap *Queries;
     char *body;
     char *sourceDir;
 }Request;
@@ -31,6 +32,19 @@ Request * NewRequest(char * method, char * path, char * htppType, hashmap * head
     request->Headers = headers;
     request->body = body;
     return request;
+}
+
+void FreeRequest(Request * request) {
+    free(request->Method);
+    free(request->Path);
+    free(request->HtppType);
+    destroyHashmap(request->Headers);
+    if (request->body) {
+        free(request->body);
+    }
+    free(request->sourceDir);
+    destroyHashmap(request->Queries);
+    free(request);
 }
 
 Request * ParseRequest(char buff[], int buffLen) {
@@ -78,23 +92,18 @@ Request * ParseRequest(char buff[], int buffLen) {
         return NULL;
     }
 
-    char * method = startline[0];
-    char * path = startline[1];
-    char * htppType = startline[2];
+    char * method = strdup(startline[0]);
+    char * path = strdup(startline[1]);
+    char * htppType = strdup(startline[2]);
 
-    //remember if you add to lines then it skips int * sizeof(type) not just bytes found that out the hard way
+    //remember if you add to lines then it skips int * sizeof(type) not just bytes
     //int skip = sizeof(char *);
-    // lines + skip means the pointer will now point to the next pointer beacause char**
-    int skip = 1;
-    hashmap * headers = ParseHeaders((lines+skip), (headerlen-1));
-    //free the array
-    //before that return the lines ptr to the original position
-    lines -= skip;
-    // don't free lines yet the vals are still inside off the hashmap
-    //freeArr(lines, headerlen+1);
-    //free(buff);
-    printf("path: %s\n", path);
-    return NewRequest(method, path, htppType, headers, bodyStart);
+    // lines + 1 means the pointer will now point to the next pointer beacause char**
+    hashmap * headers = ParseHeaders((lines+1), (headerlen-1));
+    char * body = strdup(bodyStart);
+    freeArr(lines, headerlen);
+    free(buff);
+    return NewRequest(method, path, htppType, headers, body);
 
 }
 
@@ -108,16 +117,27 @@ hashmap * ParseHeaders(char ** headers, int len) {
         size_t keyvalLen;
         char ** keyvalue = strsplit(headers[i], ":", &keyvalLen);
         if (keyvalLen != 2) {
+            freeArr(keyvalue, keyvalLen);
             continue;
         }
         if (keyvalue == NULL) {
             continue;
         }
-        keyvalue[1] = strstrip(keyvalue[1]);
-        addItem(headermap, keyvalue[0], keyvalue[1]);
+        char *changedVal = strstrip_safe(keyvalue[1]);
+        addItem(headermap, keyvalue[0], changedVal);
         freeArr(keyvalue, keyvalLen);
     }
     return headermap;
+}
+
+
+//keeps the original pointer the same and returns a new pointer
+//this is usefull because we can still free the original pointer and have the new string be a malloced ptr.
+// because in strstrip we do s++ it changes the actual val of the ptr leaving it not a the base and unable to be freed.
+char * strstrip_safe(char *s) {
+    char *modifiable = s;
+    char *newString = strdup(strstrip(modifiable));
+    return newString;
 }
 
 //from the linux kernel
@@ -131,14 +151,14 @@ char *strstrip(char *s){
         return s;
 
     end = s + size - 1;
-    while (end >= s && (*end) == ' ')
-        printf("true");
+    while (end >= s && (*end) == ' ') {
         end--;
-    *(end + 1) = '\0';
+        *(end + 1) = '\0';
+    }
 
-    while (*s && (*s) == ' ')
+    while (*s && (*s) == ' ') {
         s++;
-
+    }
     return s;
 }
 
@@ -147,11 +167,12 @@ char **strsplit(const char *input, const char *delim, size_t *count_out) {
     // maxsize of copy is 1024
     if (!copy) return NULL;
     int maxlen = strlen(copy);
-    printf("len: %d\n", maxlen);
 
     size_t count = 0;
     char **result = NULL;
-    char *token = strtok(copy, delim);
+    char * last;
+    char *iterator = copy;
+    char *token = strtok_r(iterator, delim, &last);
     size_t tokensize = 0;
     while (token && tokensize < maxlen) {
         tokensize += strlen(token)+1;
@@ -166,7 +187,8 @@ char **strsplit(const char *input, const char *delim, size_t *count_out) {
         result = newResult;
         result[count] = strdup(token);
         count++;
-        token = strtok_r(copy+tokensize, delim, &copy+tokensize);
+        iterator = last;
+        token = strtok_r(iterator, delim, &last);
     }
 
     free(copy);
@@ -188,8 +210,9 @@ void freeArr(char **arr, size_t length) {
          *then we free the array to ensure the pointers being deletd and not pointing to null mem
          *
          */
-        if (!arr[i]) {
-            free(arr[i]);
+        if (arr[i] != NULL) {
+            char * tofree = arr[i];
+            free(tofree);
         }
     }
     free(arr);

@@ -47,7 +47,9 @@ int addItem(hashmap *map, const char *key, void *value) {
 
     if (map->data[index].key == NULL) {
         map->data[index].key = strdup(key);
-        map->data[index].value = value;
+        void *copyVal = malloc(sizeof(void*));
+        memcpy(&copyVal, &value, sizeof(void*));
+        map->data[index].value = copyVal;
         map->size++;
         return 0;
     }
@@ -62,8 +64,8 @@ int addItem(hashmap *map, const char *key, void *value) {
         }
         if (map->data[i].key == NULL) {
             map->data[i].key = strdup(key);
-            void * copyVal = malloc(sizeof (void *));
-            memcpy(copyVal, value, sizeof(void *));
+            void *copyVal = malloc(sizeof(void*));
+            memcpy(&copyVal, &value, sizeof(void*));
             map->data[i].value = copyVal;
             map->size++;
             return 0;
@@ -72,6 +74,7 @@ int addItem(hashmap *map, const char *key, void *value) {
         if (strcmp(map->data[i].key, key) == 0) {
             void * copyVal = malloc(sizeof (void *));
             memcpy(copyVal, value, sizeof(void *));
+            memcpy(&copyVal, &value, sizeof(void*));
             map->data[i].value = copyVal;
             map->size++;
             return 0;
@@ -154,8 +157,12 @@ void destroyHashmap(hashmap *map) {
     if (!map) return;
     for (int i = 0; i < map->capacity; i++) {
         if (getIndex(map, i)) {
-            free(map->data[i].key);
-            free(map->data[i].value);
+            if (map->data[i].key != NULL) {
+                free(map->data[i].key);
+            }
+            if (map->data[i].value != NULL) {
+                free(map->data[i].value);
+            }
         }
     }
     free(map->data);

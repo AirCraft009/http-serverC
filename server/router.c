@@ -10,7 +10,7 @@
 typedef struct {
     hashmap * routes;
     char * sourceDir;
-}router;
+}Router;
 
 
 typedef struct {
@@ -20,37 +20,72 @@ typedef struct {
     int responseCode;
 }Response;
 
-Response * useRoute(router * router, char * path, Request * request);
-void formatStartline(Response  * response, StringBuilder * responseBuilder);
+Response * useRoute(const Router * router, char * path, Request * request);
+void formatStartline(const Response  * response, StringBuilder * responseBuilder);
 void formatResponseHeaders(Response  * response, StringBuilder * responseBuilder);
 char * formatResponse(Response * response);
 
 Response * NewResponse(Request * request) {
-    Response *response = malloc(sizeof(response));
-    response->HttpVersion = request->HtppType;
+    Response *response = malloc(sizeof(Response));
+    response->HttpVersion = strdup(request->HtppType);
     response->Headers = createHashmap(20, 10, 5);
     return response;
 }
 
-router * CreateRouter() {
-    router * router = malloc(sizeof(router));
+
+
+void FreeResponse(Response * response) {
+    if (response->body) {
+        free(response->body);
+    }
+    free(response->HttpVersion);
+    destroyHashmap(response->Headers);
+    free(response);
+}
+
+void addHeader(Response * response, char * key, char * value) {
+    addItem(response->Headers, strdup(key), strdup(value));
+}
+
+void setHttpVersion(Response * response, char * version) {
+    response->HttpVersion = strdup(version);
+}
+
+void setResponseCode(Response * response, int code) {
+    response->responseCode = code;
+}
+
+void setBody(Response * response, char * body) {
+    response->body = strdup(body);
+}
+
+void replaceHeaders(Response *response, hashmap * map) {
+    response->Headers = map;
+}
+
+void setHttpType(Response * response, char * httpType) {
+    response->HttpVersion = strdup(httpType);
+}
+
+Router * CreateRouter() {
+    Router * router = malloc(sizeof(Router));
     hashmap * routes = createHashmap(20, 10, 5);
     router->routes = routes;
     return router;
 }
 
-void DestroyRouter(router * router) {
+void DestroyRouter(Router * router) {
     free(router->routes);
     free(router);
 }
 
-void setRoute(router * router, char * method, char * path, void * handlerfunc) {
+void setRoute(const Router * router, const char * method, const char * path, void * handlerfunc) {
     hashmap * secondmap = createHashmap(20, 10, 5);
     addItem(router->routes, method, secondmap);
     addItem(secondmap, path, handlerfunc);
 }
 
-Response * useRoute(router * router, char * path, Request * request) {
+Response * useRoute(const Router * router, char * path, Request * request) {
     size_t linelen;
     hashmap * route = get(router->routes, request->Method);
     if (route == NULL) {
@@ -66,20 +101,15 @@ Response * useRoute(router * router, char * path, Request * request) {
 
 
 char * formatResponse(Response * response) {
-    printf("starting formatting\n");
     StringBuilder *responseBuilder = createStringBuilder();
-    printf("starting firstline\n");
     formatStartline(response, responseBuilder);
-    printf("starting responseHeaders\n");
     formatResponseHeaders(response, responseBuilder);
-    printf("starting responseBody\n");
     append(responseBuilder, "\r\n");
     append(responseBuilder, response->body);
-    printf("starting to string\n");
     return toString(responseBuilder);
 }
 
-void formatStartline(Response  * response, StringBuilder * responseBuilder) {
+void formatStartline(const Response  * response, StringBuilder * responseBuilder) {
     append(responseBuilder, response->HttpVersion);
     append(responseBuilder, " ");
     //any responseCode should at max be 4 long 404, 200 etc
@@ -95,14 +125,12 @@ void formatStartline(Response  * response, StringBuilder * responseBuilder) {
 
 void formatResponseHeaders(Response  * response, StringBuilder * responseBuilder) {
     //iterating over capacity instead of size because it's not given where the values will
-    printf("starting in method");
     for (int i = 0; i < response->Headers->capacity; i++) {
         item * header = getIndex(response->Headers, i);
         if (header == NULL || header->value == NULL || header->key == NULL || strcmp(header->key, "") == 0) {
             continue;
         }
-        printf("found valid pair\n");
-        printf("key: %s, val: %s\n", header->key, (char *)header->value);
+
         append(responseBuilder, header->key );
         append(responseBuilder, ": ");
         append(responseBuilder, header->value);

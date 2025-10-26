@@ -85,9 +85,7 @@ void addNode(Node * node, LinkedList * list) {
 
 void addNewNode(char * data, size_t lenght ,LinkedList * list) {
     Node * newNode = createNode(data, lenght);
-    printf("added new node\n");
     addNode(newNode, list);
-    printf("successfull added new node\n");
 }
 
 Node * nextNode(LinkedList * list) {

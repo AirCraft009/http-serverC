@@ -33,25 +33,25 @@ int main() {
     int len = strlen(rawReq);
     char * buff = malloc(sizeof(char) * len+1);
     strcpy(buff, rawReq);
-
     Request * request = ParseRequest(buff, len);
     if (request == NULL) {
-        printf("idk how this is possible");
+        return 1;
     }
     Response * response = handle404(request);
-    printf("good response\n");
     char * responseString = formatResponse(response);
     printf("%s\n", responseString);
     free(responseString);
+    FreeRequest(request);
+    FreeResponse(response);
 }
 
 Response * handle404(Request * request) {
     Response * response = NewResponse(request);
-    response->Headers = createHashmap(20, 10, 5);
-    addItem(response->Headers, "Content-Type", "text/html");
-    addItem(response->Headers, "Connection", "close");
-    addItem(response->Headers, "Content-Length", "14");
+    setHttpType(response, "HTTP/1.1");
+    addHeader(response, "Content-Type", "text/html; charset=utf-8");
+    addHeader(response, "Connection", "close");
+    addHeader(response, "Content-Length", "14");
     response->responseCode = 404;
-    response->body = "Hello World !";
+    setBody(response,"Hello World !");
     return response;
 }
