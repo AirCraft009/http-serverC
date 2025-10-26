@@ -5,8 +5,8 @@
 #include "router.h"
 
 Response * handle404(Request * request) {
-    Response * response = NewResponse(request);
-    response->Headers = createHashmap(20, 10, 5);
+    Response * response = CreateResponse(request);
+    response->Headers = CreateHashmap(20, 10, 5);
     addItem(response->Headers, "Content-Type", "text/html");
     addItem(response->Headers, "Connection", "close");
     addItem(response->Headers, "Content-Length", "14");

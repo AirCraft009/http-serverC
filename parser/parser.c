@@ -20,10 +20,10 @@ void freeArr(char ** arr, size_t len);
 hashmap * ParseHeaders(char ** headers, int len);
 char *strstrip(char *s);
 char *strstrip_safe(char *s);
-hashmap * ParseQueries(char * path);
+hashmap * ParseQueries(char ** path);
 
 
-Request * NewRequest(char * method, char * path, char * htppType, hashmap * headers, hashmap * queries, char * body) {
+Request * CreateRequest(char * method, char * path, char * htppType, hashmap * headers, hashmap * queries, char * body) {
     Request * request = (Request *) malloc(sizeof(Request));
     memset(request, 0, sizeof(Request));
     request->Method = method;
@@ -39,12 +39,12 @@ void FreeRequest(Request * request) {
     free(request->Method);
     free(request->Path);
     free(request->HtppType);
-    destroyHashmap(request->Headers);
+    FreeHashmap(request->Headers);
     if (request->body) {
         free(request->body);
     }
     free(request->sourceDir);
-    destroyHashmap(request->Queries);
+    FreeHashmap(request->Queries);
     free(request);
 }
 
@@ -111,6 +111,8 @@ Request * ParseRequest(char buff[], int buffLen) {
     //printf("buffer: %s\n", buff)
     char ** startline = strsplit(lines[0], " ", &firslinelen);
     if (firslinelen != 3) {
+        freeArr(lines, headerlen);
+        freeArr(startline, firslinelen);
         return NULL;
     }
 
@@ -122,18 +124,25 @@ Request * ParseRequest(char buff[], int buffLen) {
     //int skip = sizeof(char *);
     // lines + 1 means the pointer will now point to the next pointer beacause char**
     hashmap * headers = ParseHeaders((lines+1), (headerlen-1));
-    hashmap * queries = ParseQueries(path);
+    char ** fullpath = &path;
+    hashmap * queries = ParseQueries(fullpath);
     if (!queries) {
         // means malformed path
+        freeArr(lines, headerlen);
+        freeArr(startline, firslinelen);
+        free(path);
         return NULL;
     }
+    path = *fullpath;
     char * body = strdup(bodyStart);
     freeArr(lines, headerlen);
-    return NewRequest(method, path, htppType, headers, queries, body);
+    freeArr(startline, firslinelen);
+    return CreateRequest(method, path, htppType, headers, queries, body);
 
 }
 
-hashmap * ParseQueries(char * path) {
+hashmap * ParseQueries(char ** fullpath) {
+    char * path = *fullpath;
     if (path == NULL) {
         return NULL;
     }
@@ -146,13 +155,13 @@ hashmap * ParseQueries(char * path) {
     if (pathlen != 2) {
         // is ok occurs when no query given
         freeArr(splitPath, pathlen);
-        return 0;
+        return CreateHashmap(1, 1, 5);
     }
 
     size_t querylen;
     char ** stringqueries = strsplit(splitPath[1], "&", &querylen);
 
-    hashmap * queries = createHashmap((querylen+5) *2, 10, 10 );
+    hashmap * queries = CreateHashmap((querylen+5) *2, 10, 10 );
     for (size_t i = 0; i < querylen; i++) {
         size_t keyvallen;
         char ** keyvalue = strsplit(stringqueries[i], "=", &keyvallen);
@@ -160,9 +169,9 @@ hashmap * ParseQueries(char * path) {
             continue;
         }
         addItem(queries, keyvalue[0], keyvalue[1]);
-        freeArr(stringqueries, keyvallen);
+        freeArr(keyvalue, keyvallen);
     }
-    path = strdup(splitPath[0]);
+    *fullpath = strdup(splitPath[0]);
     freeArr(stringqueries, querylen);
     freeArr(splitPath, pathlen);
     return queries;
@@ -177,7 +186,7 @@ hashmap * ParseHeaders(char ** headers, int len) {
     if (headers == NULL) {
         return NULL;
     }
-    hashmap * headermap = createHashmap(len, 10, 5);
+    hashmap * headermap = CreateHashmap(len, 10, 5);
     for (int i = 0; i < len-1; i++) {
         size_t keyvalLen;
         char ** keyvalue = strsplit(headers[i], ":", &keyvalLen);

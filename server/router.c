@@ -9,6 +9,7 @@
 typedef struct {
     hashmap * routes;
     char * sourceDir;
+    void * baseHandler;
 }Router;
 
 
@@ -19,17 +20,15 @@ typedef struct {
     int responseCode;
 }Response;
 
-typedef Response * (*httpHandler)(Request *request);
-
 Response * useRoute(const Router * router, char * path, Request * request);
 void formatStartline(const Response  * response, StringBuilder * responseBuilder);
 void formatResponseHeaders(Response  * response, StringBuilder * responseBuilder);
 char * formatResponse(Response * response);
 
-Response * NewResponse(Request * request) {
+Response * CreateResponse(Request * request) {
     Response *response = malloc(sizeof(Response));
     response->HttpVersion = strdup(request->HtppType);
-    response->Headers = createHashmap(20, 10, 5);
+    response->Headers = CreateHashmap(20, 10, 5);
     return response;
 }
 
@@ -40,7 +39,7 @@ void FreeResponse(Response * response) {
         free(response->body);
     }
     free(response->HttpVersion);
-    destroyHashmap(response->Headers);
+    FreeHashmap(response->Headers);
     free(response);
 }
 
@@ -68,20 +67,29 @@ void setHttpType(Response * response, char * httpType) {
     response->HttpVersion = strdup(httpType);
 }
 
-Router * CreateRouter() {
+
+//base handler should be the 404 handler showing up on any not implemented paths
+Router * CreateRouter(void * basehandler) {
     Router * router = malloc(sizeof(Router));
-    hashmap * routes = createHashmap(20, 10, 5);
+    hashmap * routes = CreateHashmap(20, 10, 5);
     router->routes = routes;
     return router;
 }
 
-void DestroyRouter(Router * router) {
+void FreeRouter(Router * router) {
     free(router->routes);
     free(router);
 }
 
-void setRoute(const Router * router, const char * method, const char * path, httpHandler *handlerfunc) {
-    hashmap * secondmap = createHashmap(20, 10, 5);
+void setRoute(const Router * router, const char * method, const char * path, void *handlerfunc) {
+    hashmap *existingRoutes = get(router->routes, method);
+    hashmap * secondmap;
+    if (!existingRoutes) {
+        secondmap = CreateHashmap(20, 10, 5);
+    }else {
+        secondmap = existingRoutes;
+    }
+
     addItem(router->routes, method, secondmap);
     addItem(secondmap, path, handlerfunc);
 }
@@ -90,14 +98,24 @@ Response * useRoute(const Router * router, char * path, Request * request) {
     size_t linelen;
     hashmap * route = get(router->routes, request->Method);
     if (route == NULL) {
-        return NULL;
+        return ((Response * (*) (Request *))router->baseHandler)(request);
     }
 
     void * handlerfunc = get(route, path);
+    printf("got func");
     if (handlerfunc == NULL) {
-        return NULL;
+        return ((Response * (*) (Request *))router->baseHandler)(request);
     }
-    return ((Response * (*) (Request *))handlerfunc)(request);
+    Response *res = ((Response * (*) (Request *))handlerfunc)(request);
+    if (!res) {
+        return ((Response * (*) (Request *))router->baseHandler)(request);
+    }
+
+    //max < 1024
+    char contentlenght[4];
+    sprintf(contentlenght, "%llu", strlen(res->body));
+    addHeader(res, "Content-Length", contentlenght);
+    return res;
 }
 
 

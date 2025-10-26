@@ -1,5 +1,4 @@
 #include "socket.h"
-#include "server.h"
 #include "router.h"
 #include "../parser/parser.h"
 #include "../threadpool/thpool.h"
@@ -9,36 +8,42 @@
 #include "../Stringbuilder/StringBuilder.h"
 #include <stdbool.h>
 #include "http_statuscode.h"
+#define BUFFSIZE 1024
+#define PORT 8080
+#define ClosingType "HTTP/1.0"
+#define ClosingConnection "close"
 
 typedef struct{
     Csocket* sock;
     bool listening;
     Router* router;
     int coreNum;
-}server;
+}Server;
 
 typedef struct {
-    server* server;
+    Server* server;
     conn * conn;
 }serverConn;
 
 
 
-void Listen(server * server);
-void Accept(server * server);
+void Listen(Server * server);
+void Accept(Server * server);
 void handleConnection(void * void_serverConn);
-Response * handle404(Request * request);
 
 
-
-void Listen(server * server) {
+void Listen(Server * server) {
     assert(server);
     server->listening = true;
     ListenToOne(server->sock);
     printf("Listening on: %d\n", server->sock->Port);
 }
 
-void Accept(server *server) {
+void Handle(Server * server, char * Method, char * path, void * handler) {
+    setRoute(server->router, Method, path, handler);
+}
+
+void Accept(Server *server) {
     assert(server);
     if (!server->listening) {
         Listen(server);
@@ -72,7 +77,7 @@ void handleConnection(void * void_serverConn) {
     char buffer[BUFFSIZE];
     int n;
     serverConn * server_conn = (void *) void_serverConn;
-    server * server = server_conn->server;
+    Server * server = server_conn->server;
     conn * connection = server_conn->conn;
     char clientIP[INET_ADDRSTRLEN];
     inet_ntop(AF_INET, &connection->clientAddr.sin_addr, clientIP, sizeof(clientIP));
@@ -126,25 +131,26 @@ void handleConnection(void * void_serverConn) {
     CloseConnection(connection);
 }
 
-void DestroyServer(server * server) {
+// used inside FreeServer
+void DestroyServer(Server * server) {
     if (!server) return;
     CsocketFree(server->sock);
 }
 
-void FreeServer(server * server) {
+void FreeServer(Server * server) {
     if (!server) return;
     DestroyServer(server);
     free(server);
     WSACleanup();
 }
 
-server * InitServer(int port) {
-    server * server = malloc(sizeof(*server));
+Server * CreateServer(int port, void * basehandler) {
+    Server * server = malloc(sizeof(*server));
     if (!server) return NULL;
     server->listening = false;
     server->sock = CreateSocket(port);
     InitSocket(server->sock);
-    server->router = CreateRouter();
+    server->router = CreateRouter(basehandler);
     SYSTEM_INFO sysinfo;
     GetSystemInfo(&sysinfo);
     server->coreNum = sysinfo.dwNumberOfProcessors;
@@ -155,23 +161,3 @@ server * InitServer(int port) {
 }
 
 
-int main() {
-    server* server = InitServer(8080);
-    setRoute(server->router, "GET", "/", &handle404);
-    Listen(server);
-    Accept(server);
-    printf("ending");
-    FreeServer(server);
-    return 0;
-}
-
-Response * handle404(Request * request) {
-    Response * response = NewResponse(request);
-    setHttpType(response, "HTTP/1.1");
-    addHeader(response, "Content-Type", "text/html; charset=utf-8");
-    addHeader(response, "Connection", "close");
-    addHeader(response, "Content-Length", "14");
-    response->responseCode = 404;
-    setBody(response,"Hello World !");
-    return response;
-}

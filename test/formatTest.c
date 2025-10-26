@@ -47,7 +47,7 @@ int main() {
 }
 
 Response * handle404(Request * request) {
-    Response * response = NewResponse(request);
+    Response * response = CreateResponse(request);
     setHttpType(response, "HTTP/1.1");
     addHeader(response, "Content-Type", "text/html; charset=utf-8");
     addHeader(response, "Connection", "close");

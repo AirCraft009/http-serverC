@@ -132,7 +132,7 @@ item *getIndex(hashmap *map, int index) {
 //growingRate determines how many more items should be added
 //bound determines how many slots can be free until it starts adding
 //initSize the base size of the map before it starts getting larger
-hashmap * createHashmap(int initSize,int growingRate, int bound) {
+hashmap * CreateHashmap(int initSize,int growingRate, int bound) {
     assert(bound > 0 && bound < 100);
     assert(initSize > 0);
     assert(growingRate > 0);
@@ -149,11 +149,11 @@ hashmap * createHashmap(int initSize,int growingRate, int bound) {
 };
 
 // creates the basic hashmap blueprint sets growingRate and Bound to 10
-hashmap * createBaseMap(int initSize) {
-    return createHashmap(initSize, 10,10);
+hashmap * reateBaseMap(int initSize) {
+    return CreateHashmap(initSize, 10,10);
 }
 
-void destroyHashmap(hashmap *map) {
+void FreeHashmap(hashmap *map) {
     if (!map) return;
     for (int i = 0; i < map->capacity; i++) {
         if (getIndex(map, i)) {
