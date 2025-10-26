@@ -5,13 +5,6 @@
 #include "../hashmap/hashmap.h"
 
 
-char **strsplit(const char *input, const char *delim, size_t *count_out);
-void freeArr(char ** arr, size_t len);
-hashmap * ParseHeaders(char ** headers, int len);
-char *strstrip(char *s);
-char *strstrip_safe(char *s);
-
-
 typedef struct Request{
     char *Method;
     char *Path;
@@ -22,14 +15,22 @@ typedef struct Request{
     char *sourceDir;
 }Request;
 
+char **strsplit(const char *input, const char *delim, size_t *count_out);
+void freeArr(char ** arr, size_t len);
+hashmap * ParseHeaders(char ** headers, int len);
+char *strstrip(char *s);
+char *strstrip_safe(char *s);
+hashmap * ParseQueries(char * path);
 
-Request * NewRequest(char * method, char * path, char * htppType, hashmap * headers, char * body) {
+
+Request * NewRequest(char * method, char * path, char * htppType, hashmap * headers, hashmap * queries, char * body) {
     Request * request = (Request *) malloc(sizeof(Request));
     memset(request, 0, sizeof(Request));
     request->Method = method;
     request->Path = path;
     request->HtppType = htppType;
     request->Headers = headers;
+    request->Queries = queries;
     request->body = body;
     return request;
 }
@@ -45,6 +46,26 @@ void FreeRequest(Request * request) {
     free(request->sourceDir);
     destroyHashmap(request->Queries);
     free(request);
+}
+
+char * getQuery(const Request * request, char * key) {
+     return (char *) get(request->Queries, key);
+}
+
+char * getPath(const Request *request) {
+    return request->Path;
+}
+
+char * getMethod(const Request * request) {
+    return request->Method;
+}
+
+char * getHeader(const Request * request, char * key) {
+    return get(request->Headers, key);
+}
+
+char * getBody(const Request * request) {
+    return request->body;
 }
 
 Request * ParseRequest(char buff[], int buffLen) {
@@ -101,15 +122,59 @@ Request * ParseRequest(char buff[], int buffLen) {
     //int skip = sizeof(char *);
     // lines + 1 means the pointer will now point to the next pointer beacause char**
     hashmap * headers = ParseHeaders((lines+1), (headerlen-1));
+    hashmap * queries = ParseQueries(path);
+    if (!queries) {
+        // means malformed path
+        return NULL;
+    }
     char * body = strdup(bodyStart);
     freeArr(lines, headerlen);
-    return NewRequest(method, path, htppType, headers, body);
+    return NewRequest(method, path, htppType, headers, queries, body);
 
+}
+
+hashmap * ParseQueries(char * path) {
+    if (path == NULL) {
+        return NULL;
+    }
+    if (path[0] != '/') {
+        return NULL;
+    }
+
+    size_t pathlen;
+    char ** splitPath = strsplit(path, "?", &pathlen);
+    if (pathlen != 2) {
+        // is ok occurs when no query given
+        freeArr(splitPath, pathlen);
+        return 0;
+    }
+
+    size_t querylen;
+    char ** stringqueries = strsplit(splitPath[1], "&", &querylen);
+
+    hashmap * queries = createHashmap((querylen+5) *2, 10, 10 );
+    for (size_t i = 0; i < querylen; i++) {
+        size_t keyvallen;
+        char ** keyvalue = strsplit(stringqueries[i], "=", &keyvallen);
+        if (keyvallen != 2) {
+            continue;
+        }
+        addItem(queries, keyvalue[0], keyvalue[1]);
+        freeArr(stringqueries, keyvallen);
+    }
+    path = strdup(splitPath[0]);
+    freeArr(stringqueries, querylen);
+    freeArr(splitPath, pathlen);
+    return queries;
 }
 
 
 hashmap * ParseHeaders(char ** headers, int len) {
     if (len == 0) {
+        return NULL;
+    }
+
+    if (headers == NULL) {
         return NULL;
     }
     hashmap * headermap = createHashmap(len, 10, 5);
