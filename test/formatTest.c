@@ -40,6 +40,7 @@ int main() {
     Response * response = handle404(request);
     char * responseString = formatResponse(response);
     printf("%s\n", responseString);
+    free(buff);
     free(responseString);
     FreeRequest(request);
     FreeResponse(response);

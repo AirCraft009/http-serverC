@@ -22,6 +22,8 @@ typedef struct {
     conn * conn;
 }serverConn;
 
+
+
 void Listen(server * server);
 void Accept(server * server);
 void handleConnection(void * void_serverConn);
@@ -98,9 +100,10 @@ void handleConnection(void * void_serverConn) {
             }
 
             char* responseBuffer = formatResponse(response);
-            printf("%s\n", responseBuffer);
             send(connection->clientSock, responseBuffer ,strlen(responseBuffer) , 0);
-
+            FreeResponse(response);
+            FreeRequest(request);
+            free(responseBuffer);
             if (strcmp(request->HtppType, ClosingType) == 0) {
                 break;
             }
@@ -164,11 +167,11 @@ int main() {
 
 Response * handle404(Request * request) {
     Response * response = NewResponse(request);
-    response->Headers = createHashmap(20, 10, 5);
-    addItem(response->Headers, "Content-Type", "text/html");
-    addItem(response->Headers, "Connection", "close");
-    addItem(response->Headers, "Content-Length", "14");
+    setHttpType(response, "HTTP/1.1");
+    addHeader(response, "Content-Type", "text/html; charset=utf-8");
+    addHeader(response, "Connection", "close");
+    addHeader(response, "Content-Length", "14");
     response->responseCode = 404;
-    response->body = "Hello World !";
+    setBody(response,"Hello World !");
     return response;
 }

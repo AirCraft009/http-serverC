@@ -3,7 +3,6 @@
 //
 #include "../hashmap/hashmap.h"
 #include "../parser/parser.h"
-#include "../server/router.h"
 #include "../Stringbuilder/StringBuilder.h"
 #include "../server/http_statuscode.h"
 
@@ -19,6 +18,8 @@ typedef struct {
     char * body;
     int responseCode;
 }Response;
+
+typedef Response * (*httpHandler)(Request *request);
 
 Response * useRoute(const Router * router, char * path, Request * request);
 void formatStartline(const Response  * response, StringBuilder * responseBuilder);
@@ -79,7 +80,7 @@ void DestroyRouter(Router * router) {
     free(router);
 }
 
-void setRoute(const Router * router, const char * method, const char * path, void * handlerfunc) {
+void setRoute(const Router * router, const char * method, const char * path, httpHandler *handlerfunc) {
     hashmap * secondmap = createHashmap(20, 10, 5);
     addItem(router->routes, method, secondmap);
     addItem(secondmap, path, handlerfunc);
@@ -106,7 +107,9 @@ char * formatResponse(Response * response) {
     formatResponseHeaders(response, responseBuilder);
     append(responseBuilder, "\r\n");
     append(responseBuilder, response->body);
-    return toString(responseBuilder);
+    char * output = toString(responseBuilder);
+    freeStringBuilder(responseBuilder);
+    return output;
 }
 
 void formatStartline(const Response  * response, StringBuilder * responseBuilder) {

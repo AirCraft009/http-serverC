@@ -54,6 +54,7 @@ Request * ParseRequest(char buff[], int buffLen) {
     }
 
     char * bodyStart = strstr(buff, "\r\n\r\n");
+
     // no \r\n line was found (invalid http)
     if (bodyStart == NULL) {
         return NULL;
@@ -102,7 +103,6 @@ Request * ParseRequest(char buff[], int buffLen) {
     hashmap * headers = ParseHeaders((lines+1), (headerlen-1));
     char * body = strdup(bodyStart);
     freeArr(lines, headerlen);
-    free(buff);
     return NewRequest(method, path, htppType, headers, body);
 
 }

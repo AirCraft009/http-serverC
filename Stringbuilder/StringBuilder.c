@@ -2,8 +2,6 @@
 // Created by Mxsxll on 23.10.2025.
 //
 
-#include "StringBuilder.h"
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
