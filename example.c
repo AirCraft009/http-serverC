@@ -49,6 +49,7 @@ Response * LoginHandler(Request * request) {
     if (username == NULL || password == NULL) {
         response->responseCode = 400;
         setBody(response, "Not enough parameters for login !!!");
+        return response;
     }
     if (strcmp(username, "mxsxll") == 0 && strcmp(password, "12345678") == 0) {
         setBody(response,"Correct login!\nAccess granted!");

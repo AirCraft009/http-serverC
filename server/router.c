@@ -6,6 +6,8 @@
 #include "../Stringbuilder/StringBuilder.h"
 #include "../server/http_statuscode.h"
 
+
+
 typedef struct {
     hashmap * routes;
     char * sourceDir;
@@ -19,6 +21,12 @@ typedef struct {
     char * body;
     int responseCode;
 }Response;
+
+typedef Response *(*Handler)(Request *);
+
+typedef struct {
+    Handler handler;
+}Handlerstruct;
 
 Response * useRoute(const Router * router, char * path, Request * request);
 void formatStartline(const Response  * response, StringBuilder * responseBuilder);
@@ -69,10 +77,11 @@ void setHttpType(Response * response, char * httpType) {
 
 
 //base handler should be the 404 handler showing up on any not implemented paths
-Router * CreateRouter(void * basehandler) {
+Router * CreateRouter(Handler * basehandler) {
     Router * router = malloc(sizeof(Router));
     hashmap * routes = CreateHashmap(20, 10, 5);
     router->routes = routes;
+    router->baseHandler = basehandler;
     return router;
 }
 
@@ -81,7 +90,7 @@ void FreeRouter(Router * router) {
     free(router);
 }
 
-void setRoute(const Router * router, const char * method, const char * path, void *handlerfunc) {
+void setRoute(const Router * router,  char * method, const char * path, void *handlerfunc) {
     hashmap *existingRoutes = get(router->routes, method);
     hashmap * secondmap;
     if (!existingRoutes) {
@@ -101,12 +110,11 @@ Response * useRoute(const Router * router, char * path, Request * request) {
         return ((Response * (*) (Request *))router->baseHandler)(request);
     }
 
-    void * handlerfunc = get(route, path);
-    printf("got func");
-    if (handlerfunc == NULL) {
+    Handlerstruct * handlerstruct = get(route, path);
+    if (handlerstruct == NULL) {
         return ((Response * (*) (Request *))router->baseHandler)(request);
     }
-    Response *res = ((Response * (*) (Request *))handlerfunc)(request);
+    Response *res = ((Response * (*) (Request *))handlerstruct->handler)(request);
     if (!res) {
         return ((Response * (*) (Request *))router->baseHandler)(request);
     }

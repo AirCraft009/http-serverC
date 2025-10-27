@@ -25,8 +25,6 @@ typedef struct {
     conn * conn;
 }serverConn;
 
-
-
 void Listen(Server * server);
 void Accept(Server * server);
 void handleConnection(void * void_serverConn);
@@ -39,8 +37,10 @@ void Listen(Server * server) {
     printf("Listening on: %d\n", server->sock->Port);
 }
 
-void Handle(Server * server, char * Method, char * path, void * handler) {
-    setRoute(server->router, Method, path, handler);
+void Handle(Server * server, char * Method, char * path, Handler handler) {
+    Handlerstruct * handlerstruct = malloc(sizeof(Handlerstruct));
+    handlerstruct->handler = handler;
+    setRoute(server->router, Method, path, handlerstruct);
 }
 
 void Accept(Server *server) {
@@ -106,18 +106,19 @@ void handleConnection(void * void_serverConn) {
 
             char* responseBuffer = formatResponse(response);
             send(connection->clientSock, responseBuffer ,strlen(responseBuffer) , 0);
-            FreeResponse(response);
-            FreeRequest(request);
-            free(responseBuffer);
+
             if (strcmp(request->HtppType, ClosingType) == 0) {
                 break;
             }
 
             char * connHeader = get(request->Headers, "Connection");
-            if (strcmp(connHeader, ClosingConnection) == 0) {
+            if (connHeader == NULL || strcmp(connHeader, ClosingConnection) == 0) {
                 break;
             }
 
+            FreeResponse(response);
+            FreeRequest(request);
+            free(responseBuffer);
             
         }else if (n == 0){
             //keeping only for now
@@ -144,7 +145,7 @@ void FreeServer(Server * server) {
     WSACleanup();
 }
 
-Server * CreateServer(int port, void * basehandler) {
+Server * CreateServer(int port, Handler basehandler) {
     Server * server = malloc(sizeof(*server));
     if (!server) return NULL;
     server->listening = false;

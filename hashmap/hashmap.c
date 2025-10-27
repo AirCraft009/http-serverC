@@ -106,11 +106,14 @@ void * get(hashmap *map, char * key) {
     // might be unsafe Idk why
     uint64_t index = hashval % map->capacity;
     for (uint64_t i = index; i < map->capacity; i = (i+1) % map->capacity) {
-        if (map->data[i].key == NULL) {
-            continue;
+
+        if (map->data[i].key != NULL) {
+            if (strcmp(map->data[i].key, key) == 0) {
+                return map->data[i].value;
+            }
         }
-        if (strcmp(map->data[i].key, key) == 0) {
-            return map->data[i].value;
+        if ((i + 1)%map->capacity == index) {
+            return NULL;
         }
     }
     return NULL;

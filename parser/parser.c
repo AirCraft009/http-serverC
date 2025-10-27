@@ -15,6 +15,7 @@ typedef struct Request{
     char *sourceDir;
 }Request;
 
+
 char **strsplit(const char *input, const char *delim, size_t *count_out);
 void freeArr(char ** arr, size_t len);
 hashmap * ParseHeaders(char ** headers, int len);
