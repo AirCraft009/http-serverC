@@ -1,6 +1,7 @@
 //
 // Created by Mxsxll on 06.10.2025.
 //
+#include <ctype.h>
 #include <string.h>
 #include "../hashmap/hashmap.h"
 
@@ -119,7 +120,8 @@ Request * ParseRequest(char buff[], int buffLen) {
 
     char * method = strdup(startline[0]);
     char * path = strdup(startline[1]);
-    char * htppType = strdup(startline[2]);
+    //httpType could/will have a \r at the end
+    char * htppType = strstrip_safe(startline[2]);
 
     //remember if you add to lines then it skips int * sizeof(type) not just bytes
     //int skip = sizeof(char *);
@@ -169,7 +171,7 @@ hashmap * ParseQueries(char ** fullpath) {
         if (keyvallen != 2) {
             continue;
         }
-        addItem(queries, keyvalue[0], keyvalue[1]);
+        addItem(queries, keyvalue[0], strdup(keyvalue[1]));
         freeArr(keyvalue, keyvallen);
     }
     *fullpath = strdup(splitPath[0]);
@@ -226,12 +228,12 @@ char *strstrip(char *s){
         return s;
 
     end = s + size - 1;
-    while (end >= s && (*end) == ' ') {
+    while (end >= s && isspace(*end)) {
         end--;
         *(end + 1) = '\0';
     }
 
-    while (*s && (*s) == ' ') {
+    while (*s && isspace(*s)) {
         s++;
     }
     return s;

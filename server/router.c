@@ -77,7 +77,7 @@ void setHttpType(Response * response, char * httpType) {
 
 
 //base handler should be the 404 handler showing up on any not implemented paths
-Router * CreateRouter(Handler * basehandler) {
+Router * CreateRouter(Handler basehandler) {
     Router * router = malloc(sizeof(Router));
     hashmap * routes = CreateHashmap(20, 10, 5);
     router->routes = routes;
